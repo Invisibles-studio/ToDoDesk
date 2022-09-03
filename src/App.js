@@ -7,6 +7,7 @@ import {
     Route,
     Link
 } from "react-router-dom";
+import MainScreen from "./components/view/MainScreen";
 
 function App() {
 
@@ -15,6 +16,7 @@ function App() {
         <Router>
             <Routes>
                 <Route path="/" element={<Login/>}/>
+                <Route path="/main" element={<MainScreen/>}/>
             </Routes>
         </Router>
     </div>
