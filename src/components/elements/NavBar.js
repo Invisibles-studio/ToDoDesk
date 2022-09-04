@@ -66,7 +66,7 @@ export default function NavBar(){
     const [projects, setProjects] = useState(GetDesks())
 
     return(
-        <Column style={{width: '13.490vw', height: '94.40337909186906vh', background: Color.darkGreen, overflowY: 'scroll'}}>
+        <Column style={{width: 259, height: '94.40337909186906vh', background: Color.darkGreen, overflowY: 'scroll'}}>
             <Row style={{marginLeft: 17, marginTop: 22, alignItems: 'center'}}>
                 <div style={style.avatar}><p style={style.avatarText}>{GetUserName().slice(0,1)}</p></div>
                 <p style={style.nameText}>{GetUserName()}</p>
