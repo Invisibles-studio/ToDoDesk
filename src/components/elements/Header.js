@@ -2,7 +2,7 @@ import React from 'react';
 import {Row} from "./Utils";
 import {Color} from "../utils/Constants";
 
-export default function Header(){
+export default function Header({color = Color.darkBlue, bottomLine = false}){
 
     const GetUserName = () => {
         return 'ANOIBY'
@@ -11,9 +11,9 @@ export default function Header(){
     let style = {
         headerRow: {
             height: 53,
-            background: Color.darkBlue,
+            background: color,
             justifyContent: 'space-between',
-            alignItems: 'center'
+            alignItems: 'center',
         },
         logo: {
             marginLeft: 53,
@@ -51,15 +51,16 @@ export default function Header(){
             height: 40,
             width: 40,
             background: Color.whiteCoffee,
-            borderRadius: 20
+            borderRadius: 20,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
         },
         avatarText: {
             textAlign: 'center',
             fontSize: 22,
             fontWeight: '700',
             color: Color.darkGreen,
-            marginTop: 6,
-            marginBottom: 9,
             userSelect: 'none'
         }
     }

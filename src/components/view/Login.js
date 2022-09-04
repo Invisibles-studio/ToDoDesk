@@ -74,7 +74,7 @@ export default function Login(){
     }
 
     return(
-        <div>
+        <div style={{width: '100%', height: '100vh', background: Color.whiteCoffee}}>
             <Row style={{justifyContent: 'center'}}>
                 <Column>
                     <p style={styles.textLogo}>DESK</p>

@@ -8,6 +8,7 @@ import {
     Link
 } from "react-router-dom";
 import MainScreen from "./components/view/MainScreen";
+import Desk from "./components/view/Desk";
 
 function App() {
 
@@ -15,8 +16,10 @@ function App() {
     <div>
         <Router>
             <Routes>
-                <Route path="/" element={<Login/>}/>
+                <Route path="/" element={<Login/>}></Route>
                 <Route path="/main" element={<MainScreen/>}/>
+                <Route path="/desk/:id" element={<Desk/>}/>
+
             </Routes>
         </Router>
     </div>
