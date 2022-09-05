@@ -1,12 +1,15 @@
 import React from 'react';
 import {Row} from "./Utils";
 import {Color} from "../utils/Constants";
+import {useNavigate} from "react-router-dom";
 
 export default function Header({color = Color.darkBlue, bottomLine = false}){
 
     const GetUserName = () => {
         return 'ANOIBY'
     }
+
+    const navigation = useNavigate()
 
     let style = {
         headerRow: {
@@ -20,7 +23,8 @@ export default function Header({color = Color.darkBlue, bottomLine = false}){
             color: Color.whiteCoffee,
             fontSize: 20,
             fontWeight: '700',
-            userSelect: 'none'
+            userSelect: 'none',
+            cursor: 'pointer'
         },
         searchBlock: {
             background: Color.whiteCoffee,
@@ -67,7 +71,7 @@ export default function Header({color = Color.darkBlue, bottomLine = false}){
 
     return (
         <Row style={style.headerRow}>
-            <p style={style.logo}>DESK</p>
+            <p style={style.logo} onClick={() => navigation('/main')}>DESK</p>
             <Row>
                 <Row style={style.searchBlock}>
                     <input style={style.searchBlockInput} placeholder={'search...'}/>
