@@ -70,7 +70,7 @@ export default function Login(){
     const navigation = useNavigate();
 
     const ToMainScreen = () => {
-        return navigation('/main')
+        return navigation('/ToDoDesk/main')
     }
 
     return(

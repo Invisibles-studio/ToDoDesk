@@ -258,7 +258,7 @@ export default function MainScreen(){
 
     const ProjectItem = (name, index, admin = false) => {
         return(
-            <Column style={style.projectBlock} key={index} onClick={() => admin ? {} : navigation('/desk/'+name)}>
+            <Column style={style.projectBlock} key={index} onClick={() => admin ? {} : navigation('/ToDoDesk/desk/'+name)}>
                 <p style={style.projectBlockTitle}>{name}</p>
                 {admin && <img src={require('../images/download.png')} style={{width: 24, height: 24}}/>}
             </Column>

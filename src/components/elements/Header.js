@@ -71,7 +71,7 @@ export default function Header({color = Color.darkBlue, bottomLine = false}){
 
     return (
         <Row style={style.headerRow}>
-            <p style={style.logo} onClick={() => navigation('/main')}>DESK</p>
+            <p style={style.logo} onClick={() => navigation('/ToDoDesk/main')}>DESK</p>
             <Row>
                 <Row style={style.searchBlock}>
                     <input style={style.searchBlockInput} placeholder={'search...'}/>
