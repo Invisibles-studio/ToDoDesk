@@ -90,7 +90,7 @@ export default function Desk(){
             marginLeft: 23,
             outline: 'none',
             borderWidth: 0,
-            background: Color.whiteCoffee
+            background: 'white'
         },
         menuBlockTaskWhere: {
             fontWeight: '500',
@@ -325,18 +325,20 @@ export default function Desk(){
             setReceptionBlock('hidden')
     }
 
+    let mobile = window.innerWidth > 200 && window.innerWidth < 800;
+
     return(
         <Column style={{width: '100%', height: '100vh', background: Color.darkBlue}}>
             <Header color={Color.darkGreen} bottomLine={true}/>
             <Row>
-                <NavBar/>
+                {!mobile && <NavBar/>}
                 <ToDoLists/>
             </Row>
             <Column style={{...style.menuBlockAll, visibility: menuBlock}}>
-                <Column style={style.menuBlock}>
+                <div className={'Column DeskMenuBlock'}>
                     <Row style={{marginTop: 21, justifyContent: 'space-between'}}>
                         <Row>
-                            <img src={require('../images/bar_bottom.png')} style={{width: 30, height: 30, marginLeft: 38}}/>
+                            <img src={require('../images/bar_bottom.png')} style={{width: 30, height: 30, marginLeft: mobile? 10: 38}}/>
                             <input style={style.menuBlockTaskName} defaultValue={'New task'}/>
                         </Row>
                         <img src={require('../images/close_big.png')} style={{width: 24, height: 24, marginRight: 32, cursor: 'pointer'}}
@@ -344,43 +346,43 @@ export default function Desk(){
                     </Row>
                     <Row style={{justifyContent: 'space-between'}}>
                         <Row>
-                            <p style={style.menuBlockTaskWhere}>in the column</p>
+                            <p style={{...style.menuBlockTaskWhere, marginLeft: mobile? 64: 91}}>in the column</p>
                             <p style={style.menuBlockTaskWhere2}>Common</p>
                         </Row>
-                        <p style={style.menuBlockAction}>Actions</p>
+                        <p style={style.menuBlockAction}>Действия</p>
                     </Row>
                     <Row style={{justifyContent: 'flex-end'}}>
                         <Row style={style.menuBlockActionButton} onClick={() => OpenAndCloseReceptionBlock()}>
                             <img src={require('../images/clock.png')} style={{width: 20, height: 20, marginLeft: 10}}/>
-                            <p style={style.menuBlockActionButtonText}>Repetition</p>
+                            <p style={style.menuBlockActionButtonText}>Повторение</p>
                         </Row>
                     </Row>
                     <Row style={{justifyContent: 'space-between'}}>
-                        <Row style={{marginTop: 6, marginLeft: 38}}>
+                        <Row style={{marginTop: mobile? 40:6, marginLeft: mobile? 10:38}}>
                             <img src={require('../images/hamburger.png')} style={{width: 30, height: 30}}/>
-                            <p style={style.menuBlockDescriptionTitle}>Description</p>
+                            <p style={style.menuBlockDescriptionTitle}>Описание</p>
                         </Row>
                         <Row style={{...style.menuBlockActionButton, marginTop: 10}}>
                             <img src={require('../images/transfer.png')} style={{width: 20, height: 20, marginLeft: 10}}/>
-                            <p style={{...style.menuBlockActionButtonText, marginRight: 34}}>Сhange the<br></br>performer</p>
+                            <p style={{...style.menuBlockActionButtonText, marginRight: 34}}>Сменить исполнителя</p>
                         </Row>
                     </Row>
-                    <Row style={{marginLeft: 94}}>
+                    <Row style={{marginLeft: mobile? 64: 94}}>
                         <textarea style={style.menuBlockDescriptionBlock} placeholder={'Add a more detailed description...'}/>
                     </Row>
-                    <Row style={{marginLeft: 96, marginTop: 10}}>
-                        <input style={style.menuBlockDescriptionButton} type={'submit'} value={"Save"}/>
-                        <input style={{...style.menuBlockDescriptionButton, background: Color.darkGreen, marginLeft: 6}} type={'submit'} value={"Cancel"}/>
+                    <Row style={{marginLeft: mobile? 64: 94, marginTop: 10}}>
+                        <input style={style.menuBlockDescriptionButton} type={'submit'} value={"Сохранить"}/>
+                        <input style={{...style.menuBlockDescriptionButton, background: Color.darkGreen, marginLeft: 6}} type={'submit'} value={"Отменить"}/>
                     </Row>
-                    <Row style={{marginLeft: 38, marginTop: 42}}>
+                    <Row style={{marginLeft: mobile? 10 : 38, marginTop: 42}}>
                         <img src={require('../images/message.png')} style={{width: 30, height: 30}}/>
-                        <p style={style.menuBlockCommentsTitle}>Comments</p>
+                        <p style={style.menuBlockCommentsTitle}>Коментарии</p>
                     </Row>
-                    <Row style={{marginLeft: 35, marginTop: 24, alignItems: 'center', marginBottom: 150}}>
+                    <Row style={{marginLeft: mobile? 10: 35, marginTop: 24, alignItems: 'center', marginRight: mobile? 20: 0}}>
                         <div style={style.avatar}><p style={style.avatarText}>{GetUserName().slice(0,1)}</p></div>
                         <input style={style.menuBlockCommentsInput} type={"text"} placeholder={'Write a comment...'}/>
                     </Row>
-                    <Column style={{position: 'absolute', alignItems: 'flex-end', width: 648, visibility: receptionBlock}}
+                    <Column style={{position: 'absolute', alignItems: 'flex-end', width: mobile? '100%':648, visibility: receptionBlock}}
                         onClick={() => OpenAndCloseReceptionBlock()}>
                         <Column style={style.menuBlockReceptionBlock}>
                             <Row style={{justifyContent: 'space-between', alignItems: 'center'}}>
@@ -394,7 +396,7 @@ export default function Desk(){
 
                         </Column>
                     </Column>
-                </Column>
+                </div>
             </Column>
         </Column>
     )

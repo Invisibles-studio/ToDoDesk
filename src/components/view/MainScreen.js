@@ -20,7 +20,7 @@ export default function MainScreen(){
     let [selectedPoint, setSelectedPoint] = useState(1)
     let [projects, setProjects] = useState(['create'])
     let [projects2, setProjects2] = useState([['create']])
-    let [users, setUsers] = useState(['ANOIBY','ANOIBY','ANOIBY'])
+    let [users, setUsers] = useState(['TEST','TEST','TEST'])
 
     let [addUser, setAddUser] = useState('hidden')
     let [selectOrganization, setSelectOrganization] = useState('hidden')
@@ -258,10 +258,10 @@ export default function MainScreen(){
 
     const ProjectItem = (name, index, admin = false) => {
         return(
-            <Column style={style.projectBlock} key={index} onClick={() => admin ? {} : navigation('/ToDoDesk/desk/'+name)}>
+            <div className={'Column MainScreenProjectBlock'} key={index} onClick={() => admin ? {} : navigation('/ToDoDesk/desk/'+name)}>
                 <p style={style.projectBlockTitle}>{name}</p>
                 {admin && <img src={require('../images/download.png')} style={{width: 24, height: 24}}/>}
-            </Column>
+            </div>
         )
     }
 
@@ -272,7 +272,7 @@ export default function MainScreen(){
         list.push('test')
         list = list.reverse()
         setProjects(list)
-        let list2 = sliceIntoChunks(list, 4)
+        let list2 = mobile ? sliceIntoChunks(list, 2) : sliceIntoChunks(list, 4)
         setProjects2(list2)
     }
 
@@ -287,21 +287,21 @@ export default function MainScreen(){
 
     const UserItem = ({keys, name}) => {
         return(
-            <Row style={{...style.userItem, justifyContent: 'space-between'}} keys={keys}>
+            <div className={'Row MainScreenUserItem'} key={keys}>
                 <Row>
-                    <div style={style.avatar}><p style={style.avatarText}>{name.slice(0,1)}</p></div>
+                    <div className={'MainScreenAvatar'}><p className={'MainScreenAvatarText'}>{name.slice(0,1)}</p></div>
                     <Column style={{justifyContent: 'center', marginLeft: 8}}>
                         <p style={style.userItemName}>{name}</p>
-                        <p style={style.userItemEmail}>anoiby.of@gmail.com</p>
+                        <p style={style.userItemEmail}>TEST@gmail.com</p>
                     </Column>
                 </Row>
                 <Row>
                     <img src={require('../images/external_link.png')} style={{width: 24, height: 24, marginRight: 5, cursor: 'pointer'}} onClick={OpenAndCloseUserProfile}/>
                     <p style={style.userItemSelectOrganization} onClick={OpenAndCloseSelectOrganization}>select organizations</p>
-                    <img src={require('../images/close_big_coffee.png')} style={{width: 24, height: 24, marginRight: 18, cursor: 'pointer'}}
+                    <img src={require('../images/close_big_coffee.png')} style={{width: 24, height: 24, marginRight: mobile? 5 : 18, cursor: 'pointer'}}
                         onClick={() => DeleteUser(keys)}/>
                 </Row>
-            </Row>
+            </div>
         )
     }
 
@@ -340,66 +340,72 @@ export default function MainScreen(){
         if (userProfile === 'hidden'){
             setUserProfile('visible')
             setUserProfileData({
-                name: 'anoiby',
-                firstname: 'anoi',
-                lastname: 'by',
+                name: 'TEST',
+                firstname: 'TEST',
+                lastname: 'TEST',
                 role: 'admin',
-                email: 'anoiby.of@gmail.com'
+                email: 'TEST@gmail.com'
             })
         }
         else
             setUserProfile('hidden')
     }
 
+    let mobile = window.innerWidth < 800 && window.innerWidth > 200
 
     return(
-        <Column style={{width: '100%', height: '100vh', background: Color.whiteCoffee}}>
+        <div className={'MainBackground Column'}>
             <Header/>
-            <Column>
-                <Row>
-                    <Column style={style.controlBlock}>
-                        <Row style={{...style.controlBlockRow, marginTop: 26, background: selectedPoint === 1 ? 'rgba(203, 197, 234, 0.2)' : 'none'}}
+            <div className={'Column'}>
+                <div className={'MainScreenRow'}>
+                    <div className={'Column MainScreenControlBlock'}>
+                        <div className={'Row MainScreenControlBlockRow'} style={{marginTop: mobile ? 21 : 26, background: selectedPoint === 1 ? mobile ? 'rgba(118, 250, 193, 0.3)' : 'rgba(203, 197, 234, 0.2)' : 'none'}}
                              onClick={() => SelectPoint(1)}>
-                            <img src={require('../images/windowSidebar.png')} style={{
-                                width: 30, height: 30, marginLeft: 34, marginRight: 14, marginTop: 2
+                            <img src={require(mobile ? '../images/mobileWindowSidebar.png' : '../images/windowSidebar.png')} style={{
+                                width: 30, height: 30, marginLeft: mobile? 22 : 34, marginRight: 14, marginTop: 2
                             }}/>
-                            <p style={style.controlBlockText}>Projects</p>
-                        </Row>
-                        <Row style={{...style.controlBlockRow, background: selectedPoint === 2 ? 'rgba(203, 197, 234, 0.2)' : 'none'}}
+                            <p className={'MainScreenControlBlockText'}>Проекты</p>
+                        </div>
+                        <div className={'Row MainScreenControlBlockRow'} style={{background: selectedPoint === 2 ? mobile ? 'rgba(118, 250, 193, 0.3)' : 'rgba(203, 197, 234, 0.2)' : 'none'}}
                              onClick={() => SelectPoint(2)}>
-                            <img src={require('../images/user.png')} style={{
-                                width: 30, height: 30, marginLeft: 34, marginRight: 14, marginTop: 2
+                            <img src={require(mobile ? '../images/mobileUser.png' : '../images/user.png')} style={{
+                                width: 30, height: 30, marginLeft: mobile? 22 : 34, marginRight: 14, marginTop: 2
                             }}/>
-                            <p style={style.controlBlockText}>Users</p>
-                        </Row>
-                        <Row style={{...style.controlBlockRow, marginBottom: 13, background: selectedPoint === 3 ? 'rgba(203, 197, 234, 0.2)' : 'none'}}
+                            <p className={'MainScreenControlBlockText'}>Пользователи</p>
+                        </div>
+                        <div className={'Row MainScreenControlBlockRow'} style={{marginBottom: 13, background: selectedPoint === 3 ? mobile ? 'rgba(118, 250, 193, 0.3)' : 'rgba(203, 197, 234, 0.2)' : 'none'}}
                             onClick={() => SelectPoint(3)}>
-                            <img src={require('../images/settingsFuture.png')} style={{
-                                width: 30, height: 30, marginLeft: 34, marginRight: 14, marginTop: 2
+                            <img src={require(mobile ? '../images/mobileSettingsFuture.png' : '../images/settingsFuture.png')} style={{
+                                width: 30, height: 30, marginLeft: mobile? 22 : 34, marginRight: 14, marginTop: 2
                             }}/>
-                            <p style={style.controlBlockText}>Admin</p>
-                        </Row>
-                    </Column>
+                            <p className={'MainScreenControlBlockText'}>Админ</p>
+                        </div>
+                    </div>
                     {
                         selectedPoint === 1 &&
-                        <Column style={style.projectsBlock}>
-                            <p style={style.projectsBlockTitle}>Your organizations</p>
+                        <Column style={mobile? {marginTop: 27} : style.projectsBlock}>
+                            <Row style={mobile? {justifyContent: 'center'} : {justifyContent: 'flex-start'}}>
+                                <p className={'MainScreenProjectBlockTitle'}>Ваши организации</p>
+                                <img src={require('../images/plusBlack.png')} style={{
+                                    width: 30, height: 30, marginLeft: 12, marginTop: 10, cursor: 'pointer'
+                                }} onClick={() => CreateProject()}/>
+                            </Row>
                             { projects2.map((item, i) => {
-                                    return(<Row key={i}>
+                                    return(<div className={'Row MainScreenProjectBlockRow'} key={i}>
                                         {item.map((item2, j) =>{
-                                            return item2 === 'create' ? CreateProjectBlock() : ProjectItem(item2, j)
+                                            return item2 === 'create' ? mobile ? <div/> : CreateProjectBlock() : ProjectItem(item2, j)
                                         })}
-                                    </Row>)
+                                    </div>)
                             })}
                         </Column>
                     }
                     {
                         selectedPoint === 2 &&
-                        <Column style={style.projectsBlock}>
-                            <Row style={{alignItems: 'center'}}>
-                                <p style={{...style.projectsBlockTitle, marginBottom: 0}}>Users</p>
-                                <img src={require('../images/cooliconGreen.png')} style={{
-                                    width: 20, height: 20, marginLeft: 12, marginTop: 8, cursor: 'pointer'
+                        <Column style={mobile? {marginTop: 27, marginLeft: 8, marginRight: 8} : style.projectsBlock}>
+                            <Row style={mobile? {justifyContent: 'center'} : {justifyContent: 'flex-start'}}>
+                                <p className={'MainScreenProjectBlockTitle'}>Пользователи</p>
+                                <img src={require('../images/plusBlack.png')} style={{
+                                    width: 30, height: 30, marginLeft: 12, marginTop: 10, cursor: 'pointer'
                                 }} onClick={() => OpenAndCloseAddUser()}/>
                             </Row>
                             {users.map((item, i) => <UserItem keys={i} name={item}/>)}
@@ -408,7 +414,7 @@ export default function MainScreen(){
                     {
                         selectedPoint === 3 &&
                         <Column style={style.projectsBlock}>
-                            <p style={style.projectsBlockTitle}>Admin panel</p>
+                            <p style={style.projectsBlockTitle}>Админ панель</p>
                             { projects2.map((item, i) => {
                                 return(<Row key={i}>
                                     {item.map((item2, j) =>{
@@ -419,8 +425,8 @@ export default function MainScreen(){
                             })}
                         </Column>
                     }
-                </Row>
-            </Column>
+                </div>
+            </div>
             <Column style={{
                 position: 'absolute', width: '100%', height: '100%', background: 'rgb(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center',
                 visibility: addUser
@@ -468,7 +474,7 @@ export default function MainScreen(){
                 position: 'absolute', width: '100%', height: '100%', background: 'rgb(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center',
                 visibility: userProfile
             }}>
-                <Column style={style.userProfileBlock}>
+                <div className={'Column MainScreenUserProfileBlock'}>
                     <Row style={{marginTop: 15, alignItems: 'center', justifyContent: 'space-between'}}>
                         <p style={style.userProfileBlockName}>{userProfileData.name}</p>
                         <img src={require('../images/close_big.png')} style={{width: 30, height: 30, marginRight: 33, cursor: 'pointer'}}
@@ -490,18 +496,18 @@ export default function MainScreen(){
                         <p style={style.userProfileBlockCurrentTaskText}>Current task</p>
                     </div>
                     <Row style={{marginTop: 14}}>
-                        <div style={{...style.userProfileBlockDarkButtons, marginLeft: 64}}>
+                        <div style={{...style.userProfileBlockDarkButtons, marginLeft: mobile? 10 : 64}}>
                             <p style={style.userProfileBlockDarkButtonsText}>Change password</p>
                         </div>
-                        <div style={{...style.userProfileBlockDarkButtons, marginLeft: 24}}>
+                        <div style={{...style.userProfileBlockDarkButtons, marginLeft: mobile? 5 : 24, marginRight: mobile? 10 : 0}}>
                             <p style={style.userProfileBlockDarkButtonsText}>Change choosen tasks</p>
                         </div>
                     </Row>
                     <Row style={{justifyContent: 'center', marginTop: 58, marginBottom: 20}}>
                         <Calendar/>
                     </Row>
-                </Column>
+                </div>
             </Column>
-        </Column>
+        </div>
     )
 }

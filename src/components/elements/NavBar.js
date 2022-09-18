@@ -52,7 +52,7 @@ export default function NavBar(){
     }
 
     const GetUserName = () => {
-        return 'ANOIBY'
+        return 'TEST'
     }
 
     const GetDesks = () => {

@@ -9,6 +9,7 @@ import {
 } from "react-router-dom";
 import MainScreen from "./components/view/MainScreen";
 import Desk from "./components/view/Desk";
+import "./components/css/main.css";
 
 function App() {
 
