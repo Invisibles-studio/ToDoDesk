@@ -1,16 +1,17 @@
 {
   "files": {
-    "main.css": "/ToDoDesk/static/css/main.04cad9b7.css",
-    "main.js": "/ToDoDesk/static/js/main.c3d999d3.js",
+    "main.css": "/ToDoDesk/static/css/main.8ec847e4.css",
+    "main.js": "/ToDoDesk/static/js/main.f4050e95.js",
     "static/js/787.e24710c0.chunk.js": "/ToDoDesk/static/js/787.e24710c0.chunk.js",
+    "static/media/helvetica_bold.otf": "/ToDoDesk/static/media/helvetica_bold.899889c95eb3c6b47ce3.otf",
     "static/media/logo.svg": "/ToDoDesk/static/media/logo.6ce24c58023cc2f8fd88fe9d219db6c6.svg",
     "index.html": "/ToDoDesk/index.html",
-    "main.04cad9b7.css.map": "/ToDoDesk/static/css/main.04cad9b7.css.map",
-    "main.c3d999d3.js.map": "/ToDoDesk/static/js/main.c3d999d3.js.map",
+    "main.8ec847e4.css.map": "/ToDoDesk/static/css/main.8ec847e4.css.map",
+    "main.f4050e95.js.map": "/ToDoDesk/static/js/main.f4050e95.js.map",
     "787.e24710c0.chunk.js.map": "/ToDoDesk/static/js/787.e24710c0.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.04cad9b7.css",
-    "static/js/main.c3d999d3.js"
+    "static/css/main.8ec847e4.css",
+    "static/js/main.f4050e95.js"
   ]
 }
