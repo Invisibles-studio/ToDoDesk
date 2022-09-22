@@ -1,6 +1,6 @@
 import React from "react";
 import {Column, Row} from "../elements/Utils";
-import {Color} from "../utils/Constants";
+import {Color, Strings} from "../utils/Constants";
 import {useNavigate} from "react-router-dom";
 
 export default function Login(){
@@ -31,7 +31,7 @@ export default function Login(){
         <div className={'MainBackground'}>
             <Row style={{justifyContent: 'center'}}>
                 <Column>
-                    <p className={'LoginTextLogo'}>DESK</p>
+                    <p className={'LoginTextLogo'}>{Strings.LogoName}</p>
                     <div className={'LoginBlock'}>
                         <Column>
                             <p className={'LoginBlockTitle'}>Авторизация</p>

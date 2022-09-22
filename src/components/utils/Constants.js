@@ -7,3 +7,7 @@ export class Color {
     static darkBlue = '#313D5A'
     static darkGreen = '#183642'
 }
+
+export class Strings {
+    static LogoName = "LiSoftware"
+}

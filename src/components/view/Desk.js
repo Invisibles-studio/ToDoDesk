@@ -11,19 +11,12 @@ export default function Desk(){
     const deskId = params.id
 
     let style = {
-        todoLists: {
-            marginTop: 47,
-            marginLeft: 54,
-            overflowX: 'scroll',
-            overflowY: 'scroll'
-        },
         toDoListComponent: {
             display: 'flex',
             flexDirection: 'column',
             background: Color.whiteCoffee,
             borderRadius: 7,
             width: 255,
-            height: 69,
             marginRight: 23,
             minWidth: 255
         },
@@ -84,13 +77,14 @@ export default function Desk(){
         menuBlockTaskName: {
             fontSize: 20,
             fontWeight: '700',
-            color: Color.darkBlue,
+            color: "black",
             marginTop: 0,
             marginBottom: 0,
             marginLeft: 23,
             outline: 'none',
             borderWidth: 0,
-            background: 'white'
+            background: 'white',
+            verticalAlign: 'middle'
         },
         menuBlockTaskWhere: {
             fontWeight: '500',
@@ -224,7 +218,8 @@ export default function Desk(){
             color: Color.darkBlue,
             fontSize: 12,
             fontWeight: '700',
-            marginLeft: 49
+            textAlign: 'center',
+            flex: 1
         },
         menuBlockReceptionBlockButton: {
             width: 140,
@@ -238,7 +233,7 @@ export default function Desk(){
         }
     }
 
-    let dataToDoList = ['Common', 'Medium', 'Important', 'Very important', 'Done']
+    let dataToDoList = ['Обычные', 'Средние', 'Важные', 'Очень важные', 'Готовые']
 
     const GetListData = (type) => {
         return []
@@ -297,7 +292,7 @@ export default function Desk(){
                 <Row style={{alignItems: 'center', marginTop: 18, cursor: 'pointer'}}
                      onClick={() => CreateToDoItem("test", stateLists[index], keys)}>
                     <img src={require('../images/coolicon.png')} style={{width: 14, height: 14, marginLeft: 10, marginBottom: 10}}/>
-                    <p style={style.todoAddText}>Add task</p>
+                    <p style={style.todoAddText}>Добавить</p>
                 </Row>
             </div>
         )
@@ -305,9 +300,9 @@ export default function Desk(){
 
     const ToDoLists = () => {
         return(
-            <Row style={style.todoLists}>
+            <div className={"Row ToDoLists"}>
                 {dataToDoList.map((item, i) => <ToDoListComponent name={item} keys={`${item}-${i}`} index={i}/>)}
-            </Row>
+            </div>
         )
     }
 
@@ -328,10 +323,9 @@ export default function Desk(){
     let mobile = window.innerWidth > 200 && window.innerWidth < 800;
 
     return(
-        <Column style={{width: '100%', height: '100vh', background: Color.darkBlue}}>
-            <Header color={Color.darkGreen} bottomLine={true}/>
+        <Column style={{width: '100%', height: '100%', background: "black", overflowY: 'hidden', minHeight: '100vh'}}>
+            <Header  bottomLine={true}/>
             <Row>
-                {!mobile && <NavBar/>}
                 <ToDoLists/>
             </Row>
             <Column style={{...style.menuBlockAll, visibility: menuBlock}}>
@@ -339,15 +333,15 @@ export default function Desk(){
                     <Row style={{marginTop: 21, justifyContent: 'space-between'}}>
                         <Row>
                             <img src={require('../images/bar_bottom.png')} style={{width: 30, height: 30, marginLeft: mobile? 10: 38}}/>
-                            <input style={style.menuBlockTaskName} defaultValue={'New task'}/>
+                            <input style={style.menuBlockTaskName} defaultValue={'Новое задание'}/>
                         </Row>
                         <img src={require('../images/close_big.png')} style={{width: 24, height: 24, marginRight: 32, cursor: 'pointer'}}
                         onClick={() => OpenAndCloseMenuBlock()}/>
                     </Row>
                     <Row style={{justifyContent: 'space-between'}}>
                         <Row>
-                            <p style={{...style.menuBlockTaskWhere, marginLeft: mobile? 64: 91}}>in the column</p>
-                            <p style={style.menuBlockTaskWhere2}>Common</p>
+                            <p style={{...style.menuBlockTaskWhere, marginLeft: mobile? 64: 91}}>В колонке</p>
+                            <p style={style.menuBlockTaskWhere2}>Обычные</p>
                         </Row>
                         <p style={style.menuBlockAction}>Действия</p>
                     </Row>
@@ -368,7 +362,7 @@ export default function Desk(){
                         </Row>
                     </Row>
                     <Row style={{marginLeft: mobile? 64: 94}}>
-                        <textarea style={style.menuBlockDescriptionBlock} placeholder={'Add a more detailed description...'}/>
+                        <textarea style={style.menuBlockDescriptionBlock} placeholder={'Добавьте более детальное описание...'}/>
                     </Row>
                     <Row style={{marginLeft: mobile? 64: 94, marginTop: 10}}>
                         <input style={style.menuBlockDescriptionButton} type={'submit'} value={"Сохранить"}/>
@@ -378,21 +372,21 @@ export default function Desk(){
                         <img src={require('../images/message.png')} style={{width: 30, height: 30}}/>
                         <p style={style.menuBlockCommentsTitle}>Коментарии</p>
                     </Row>
-                    <Row style={{marginLeft: mobile? 10: 35, marginTop: 24, alignItems: 'center', marginRight: mobile? 20: 0}}>
+                    <Row style={{marginLeft: mobile? 10: 35, marginTop: 24, alignItems: 'center', marginRight: mobile? 20: 0, marginBottom: mobile? 0: 20}}>
                         <div style={style.avatar}><p style={style.avatarText}>{GetUserName().slice(0,1)}</p></div>
-                        <input style={style.menuBlockCommentsInput} type={"text"} placeholder={'Write a comment...'}/>
+                        <input style={style.menuBlockCommentsInput} type={"text"} placeholder={'Напишите коментарий...'}/>
                     </Row>
                     <Column style={{position: 'absolute', alignItems: 'flex-end', width: mobile? '100%':648, visibility: receptionBlock}}
                         onClick={() => OpenAndCloseReceptionBlock()}>
                         <Column style={style.menuBlockReceptionBlock}>
                             <Row style={{justifyContent: 'space-between', alignItems: 'center'}}>
-                                <p style={style.menuBlockReceptionBlockTitle}>Repetition</p>
+                                <p style={style.menuBlockReceptionBlockTitle}>Повторение</p>
                                 <img src={require('../images/close_big.png')} style={{width: 14, height: 14, cursor: 'pointer', marginRight: 8}}
                                      onClick={() => OpenAndCloseReceptionBlock()}/>
                             </Row>
-                            <input type={'submit'} value={'Once a day'} style={style.menuBlockReceptionBlockButton}/>
-                            <input type={'submit'} value={'Once a week'} style={style.menuBlockReceptionBlockButton}/>
-                            <input type={'submit'} value={'Once a month'} style={{...style.menuBlockReceptionBlockButton, marginBottom: 14}}/>
+                            <input type={'submit'} value={'Один раз в день'} style={style.menuBlockReceptionBlockButton}/>
+                            <input type={'submit'} value={'Один раз в неделю'} style={style.menuBlockReceptionBlockButton}/>
+                            <input type={'submit'} value={'Один раз в месяц'} style={{...style.menuBlockReceptionBlockButton, marginBottom: 14}}/>
 
                         </Column>
                     </Column>

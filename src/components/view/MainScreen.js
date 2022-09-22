@@ -56,12 +56,12 @@ export default function MainScreen(){
             fontSize: 30,
             fontWeight: '700',
             marginTop: 0,
-            color: Color.darkGreen,
+            color: "Black",
             userSelect: 'none',
             marginBottom: 30
         },
         createProjectBlock: {
-            background: Color.darkGreen,
+            background: "#144AE4",
             borderRadius: 13,
             width: 188,
             height: 116,
@@ -132,10 +132,10 @@ export default function MainScreen(){
         },
         userItemSelectOrganization: {
             color: Color.whiteCoffee,
-            fontSize: 12,
+            fontSize: 10,
             textDecorationLine: 'underline',
             marginRight: 17,
-            marginTop: 2,
+            marginTop: 4,
             marginBottom: 0,
             cursor: 'pointer'
         },
@@ -167,7 +167,7 @@ export default function MainScreen(){
         },
         selectOrganizationTitle: {
             textAlign: 'center',
-            color: Color.darkGreen,
+            color: "black",
             fontSize: 16,
             flex: 2,
             marginTop: 0,
@@ -175,7 +175,7 @@ export default function MainScreen(){
         },
         selectOrganizationMessage: {
             fontSize: 12,
-            color: Color.darkGreen,
+            color: "black",
             marginLeft: 7,
             marginRight: 28,
             marginTop: 0,
@@ -279,7 +279,7 @@ export default function MainScreen(){
     const CreateProjectBlock = () => {
         return(
             <Column style={{...style.createProjectBlock}} onClick={() => CreateProject()}>
-                <p style={style.createProjectBlockTitle}>Create organization</p>
+                <p style={style.createProjectBlockTitle}>Создать организацию</p>
                 <img src={require('../images/plus.png')} style={{width: 24, height: 24}}/>
             </Column>
         )
@@ -295,9 +295,9 @@ export default function MainScreen(){
                         <p style={style.userItemEmail}>TEST@gmail.com</p>
                     </Column>
                 </Row>
-                <Row>
+                <Row style={{alignItems: 'center'}}>
                     <img src={require('../images/external_link.png')} style={{width: 24, height: 24, marginRight: 5, cursor: 'pointer'}} onClick={OpenAndCloseUserProfile}/>
-                    <p style={style.userItemSelectOrganization} onClick={OpenAndCloseSelectOrganization}>select organizations</p>
+                    <p style={{...style.userItemSelectOrganization, fontSize: mobile? 10 : 12, marginTop: 0}} onClick={OpenAndCloseSelectOrganization}>Выбрать организации</p>
                     <img src={require('../images/close_big_coffee.png')} style={{width: 24, height: 24, marginRight: mobile? 5 : 18, cursor: 'pointer'}}
                         onClick={() => DeleteUser(keys)}/>
                 </Row>
@@ -386,9 +386,11 @@ export default function MainScreen(){
                         <Column style={mobile? {marginTop: 27} : style.projectsBlock}>
                             <Row style={mobile? {justifyContent: 'center'} : {justifyContent: 'flex-start'}}>
                                 <p className={'MainScreenProjectBlockTitle'}>Ваши организации</p>
-                                <img src={require('../images/plusBlack.png')} style={{
-                                    width: 30, height: 30, marginLeft: 12, marginTop: 10, cursor: 'pointer'
-                                }} onClick={() => CreateProject()}/>
+                                {mobile &&
+                                    <img src={require('../images/plusBlack.png')} style={{
+                                        width: 30, height: 30, marginLeft: 12, marginTop: 5, cursor: 'pointer'
+                                    }} onClick={() => CreateProject()}/>
+                                }
                             </Row>
                             { projects2.map((item, i) => {
                                     return(<div className={'Row MainScreenProjectBlockRow'} key={i}>
@@ -405,7 +407,7 @@ export default function MainScreen(){
                             <Row style={mobile? {justifyContent: 'center'} : {justifyContent: 'flex-start'}}>
                                 <p className={'MainScreenProjectBlockTitle'}>Пользователи</p>
                                 <img src={require('../images/plusBlack.png')} style={{
-                                    width: 30, height: 30, marginLeft: 12, marginTop: 10, cursor: 'pointer'
+                                    width: 30, height: 30, marginLeft: 12, marginTop: 5, cursor: 'pointer'
                                 }} onClick={() => OpenAndCloseAddUser()}/>
                             </Row>
                             {users.map((item, i) => <UserItem keys={i} name={item}/>)}
@@ -413,15 +415,15 @@ export default function MainScreen(){
                     }
                     {
                         selectedPoint === 3 &&
-                        <Column style={style.projectsBlock}>
-                            <p style={style.projectsBlockTitle}>Админ панель</p>
+                        <Column style={mobile? {marginTop: 27, marginLeft: 8, marginRight: 8} : style.projectsBlock}>
+                            <p className={'MainScreenProjectBlockTitle'}>Админ панель</p>
                             { projects2.map((item, i) => {
-                                return(<Row key={i}>
+                                return(<div className={'Row MainScreenProjectBlockRow'} key={i}>
                                     {item.map((item2, j) =>{
                                         if (item2 === 'create') return
                                         return ProjectItem(item2, j, true)
                                     })}
-                                </Row>)
+                                </div>)
                             })}
                         </Column>
                     }
@@ -433,17 +435,17 @@ export default function MainScreen(){
             }}>
                 <Column style={style.addUserBlock}>
                     <Row style={{alignItems: 'center', marginTop: 9, justifyContent: 'space-between'}}>
-                        <p style={style.addUserBlockTitle}>Add new user</p>
+                        <p style={style.addUserBlockTitle}>Добавить нового пользователя</p>
                         <img src={require('../images/close_big.png')} style={{width: 24, height: 24, marginRight: 13, cursor: 'pointer'}}
                             onClick={() => OpenAndCloseAddUser()}/>
                     </Row>
-                    <input style={style.addUserBlockInput}  placeholder={'Username...'} id={'username'} defaultValue={''}/>
-                    <input style={style.addUserBlockInput}  placeholder={'First name...'} id={'firstname'} defaultValue={''}/>
-                    <input style={style.addUserBlockInput}  placeholder={'Last name...'} id={'lastname'} defaultValue={''}/>
-                    <input style={style.addUserBlockInput}  placeholder={'Email...'} id={'email'} defaultValue={''}/>
-                    <input style={style.addUserBlockInput}  placeholder={'Password...'} type={'password'} id={'password'} defaultValue={''}/>
-                    <input style={{...style.addUserBlockInput, marginBottom: 15}}  placeholder={'Select role...'} id={'role'} defaultValue={''}/>
-                    <input type={'submit'} value={'Add'} style={{marginRight: 13, marginLeft: 22, marginTop: 13, marginBottom: 15}}
+                    <input style={style.addUserBlockInput}  placeholder={'Имя пользователя...'} id={'username'} defaultValue={''}/>
+                    <input style={style.addUserBlockInput}  placeholder={'Имя...'} id={'firstname'} defaultValue={''}/>
+                    <input style={style.addUserBlockInput}  placeholder={'Фамилия...'} id={'lastname'} defaultValue={''}/>
+                    <input style={style.addUserBlockInput}  placeholder={'Почта...'} id={'email'} defaultValue={''}/>
+                    <input style={style.addUserBlockInput}  placeholder={'Пароль...'} type={'password'} id={'password'} defaultValue={''}/>
+                    <input style={{...style.addUserBlockInput, marginBottom: 15}}  placeholder={'Выбрать роль...'} id={'role'} defaultValue={''}/>
+                    <input type={'submit'} value={'Добавить'} style={{marginRight: 13, marginLeft: 22, marginTop: 13, marginBottom: 15}}
                            onClick={() => CreateUser()}/>
                 </Column>
             </Column>
@@ -453,14 +455,14 @@ export default function MainScreen(){
             }}>
                 <Column style={{...style.addUserBlock, width: 300}}>
                     <Row style={{marginTop: 10}}>
-                        <p style={style.selectOrganizationTitle}>Organizations</p>
+                        <p style={style.selectOrganizationTitle}>Организации</p>
                         <img src={require('../images/close_big.png')} style={{width: 24, height: 24, marginRight: 10, cursor: 'pointer'}}
                              onClick={OpenAndCloseSelectOrganization}/>
                     </Row>
                     <div style={{borderRadius: 2, borderStyle: 'solid', borderColor: 'rgba(0, 0, 0, 0.1)',
                         borderWidth: 0.2, marginLeft: 7, marginRight: 7}}/>
                     <Row>
-                        <p style={style.selectOrganizationMessage}>anoiby is a member of the following organizations:</p>
+                        <p style={style.selectOrganizationMessage}>anoiby принадлежит к следующим организациям:</p>
                         <img src={require('../images/cooliconGreen.png')} style={{
                             width: 14, height: 14, marginRight: 15, marginTop: 5, cursor: 'pointer'
                         }}/>
@@ -483,24 +485,24 @@ export default function MainScreen(){
                     <div style={{borderRadius: 2, borderStyle: 'solid', borderColor: Color.darkGreen,
                         borderWidth: 0.2, marginLeft: 43, marginRight: 25}}/>
                     <Row style={{justifyContent: 'space-between'}}>
-                        <p style={{...style.userProfileBlockTexts, marginLeft: 71, flex: 1}}>First name: {userProfileData.firstname}</p>
-                        <p style={{...style.userProfileBlockTexts, marginRight: 71, flex: 1}}>Role: {userProfileData.role}</p>
+                        <p style={{...style.userProfileBlockTexts, marginLeft: 71, flex: 1}}>Имя: {userProfileData.firstname}</p>
+                        <p style={{...style.userProfileBlockTexts, marginRight: 71, flex: 1}}>Роль: {userProfileData.role}</p>
                     </Row>
                     <Row style={{justifyContent: 'space-between'}}>
-                        <p style={{...style.userProfileBlockTexts, marginLeft: 71, flex: 1}}>Last name: {userProfileData.lastname}</p>
-                        <p style={{...style.userProfileBlockTexts, marginRight: 71, flex: 1}}>Email: {userProfileData.email}</p>
+                        <p style={{...style.userProfileBlockTexts, marginLeft: 71, flex: 1}}>Фамилия: {userProfileData.lastname}</p>
+                        <p style={{...style.userProfileBlockTexts, marginRight: 71, flex: 1}}>Почта: {userProfileData.email}</p>
                     </Row>
                     <div style={{borderRadius: 2, borderStyle: 'solid', borderColor: Color.darkGreen,
                         borderWidth: 0.2, marginLeft: 43, marginRight: 25}}/>
                     <div style={style.userProfileBlockCurrentTask}>
-                        <p style={style.userProfileBlockCurrentTaskText}>Current task</p>
+                        <p style={style.userProfileBlockCurrentTaskText}>Текущее задание</p>
                     </div>
                     <Row style={{marginTop: 14}}>
                         <div style={{...style.userProfileBlockDarkButtons, marginLeft: mobile? 10 : 64}}>
-                            <p style={style.userProfileBlockDarkButtonsText}>Change password</p>
+                            <p style={style.userProfileBlockDarkButtonsText}>Поменять пароль</p>
                         </div>
                         <div style={{...style.userProfileBlockDarkButtons, marginLeft: mobile? 5 : 24, marginRight: mobile? 10 : 0}}>
-                            <p style={style.userProfileBlockDarkButtonsText}>Change choosen tasks</p>
+                            <p style={style.userProfileBlockDarkButtonsText}>Поменять выбранные задания</p>
                         </div>
                     </Row>
                     <Row style={{justifyContent: 'center', marginTop: 58, marginBottom: 20}}>

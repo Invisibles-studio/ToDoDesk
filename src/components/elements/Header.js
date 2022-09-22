@@ -1,6 +1,6 @@
 import React from 'react';
 import {Row} from "./Utils";
-import {Color} from "../utils/Constants";
+import {Color, Strings} from "../utils/Constants";
 import {useNavigate} from "react-router-dom";
 
 export default function Header({color = "#144AE4", bottomLine = false}){
@@ -43,10 +43,10 @@ export default function Header({color = "#144AE4", bottomLine = false}){
 
     return (
         <div className={'Row HeaderRow'} style={mobile ? {} : {background: color}}>
-            <p className={'HeaderLogo'} onClick={() => navigation('/ToDoDesk/main')}>DESK</p>
+            <p className={'HeaderLogo'} onClick={() => navigation('/ToDoDesk/main')}>{Strings.LogoName}</p>
             <Row>
                 <div className={'Row HeaderSearchBlock'}>
-                    <input style={style.searchBlockInput} placeholder={'search...'}/>
+                    <input style={style.searchBlockInput} placeholder={'Поиск...'}/>
                     <img src={require('../images/searchIcon.png')} style={style.searchBlockImage}/>
                 </div>
                 <div className={'HeaderAvatar'}><p className={'HeaderAvatarText'}>{GetUserName().slice(0,1)}</p></div>
