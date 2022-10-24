@@ -1,10 +1,13 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import Header from "../elements/Header";
 import {Column, Row} from "../elements/Utils";
 import {Color} from "../utils/Constants";
 import {useNavigate} from "react-router-dom";
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
+import {Firebase} from "../utils/Firebase.tsx";
+import {User} from "../models/User.tsx"
+import {Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle} from "@mui/material";
 
 function sliceIntoChunks(arr, chunkSize) {
     const res = [];
@@ -15,17 +18,22 @@ function sliceIntoChunks(arr, chunkSize) {
     return res;
 }
 
-export default function MainScreen(){
+export default function MainScreen() {
 
     let [selectedPoint, setSelectedPoint] = useState(1)
     let [projects, setProjects] = useState(['create'])
     let [projects2, setProjects2] = useState([['create']])
-    let [users, setUsers] = useState(['TEST','TEST','TEST'])
+    let [users, setUsers] = useState([])
 
     let [addUser, setAddUser] = useState('hidden')
     let [selectOrganization, setSelectOrganization] = useState('hidden')
     let [userProfile, setUserProfile] = useState('hidden')
     let [userProfileData, setUserProfileData] = useState({})
+    let [myUserData, setMyUserData] = useState(typeof User)
+    let [initial, setInitial] = useState(false)
+    let [openDialogSave, setOpenDialogSave] = useState(false)
+    let [changeParametr, setChangeParametr] = useState(0)
+    let [selectedUser, setSelectedUser] = useState('')
 
     let style = {
         controlBlock: {
@@ -205,7 +213,8 @@ export default function MainScreen(){
         userProfileBlockTexts: {
             fontSize: 16,
             fontWeight: '700',
-            color: Color.darkGreen
+            color: Color.darkGreen,
+            marginTop: 10
         },
         userProfileBlockCurrentTask: {
             background: Color.whiteCoffee,
@@ -244,6 +253,7 @@ export default function MainScreen(){
         }
     }
 
+    const firebase = new Firebase()
     const navigation = useNavigate();
 
     const SelectPoint = (type) => {
@@ -257,8 +267,9 @@ export default function MainScreen(){
     }
 
     const ProjectItem = (name, index, admin = false) => {
-        return(
-            <div className={'Column MainScreenProjectBlock'} key={index} onClick={() => admin ? {} : navigation('/ToDoDesk/desk/'+name)}>
+        return (
+            <div className={'Column MainScreenProjectBlock'} key={index}
+                 onClick={() => admin ? {} : navigation('/ToDoDesk/desk/' + name)}>
                 <p style={style.projectBlockTitle}>{name}</p>
                 {admin && <img src={require('../images/download.png')} style={{width: 24, height: 24}}/>}
             </div>
@@ -277,7 +288,7 @@ export default function MainScreen(){
     }
 
     const CreateProjectBlock = () => {
-        return(
+        return (
             <Column style={{...style.createProjectBlock}} onClick={() => CreateProject()}>
                 <p style={style.createProjectBlockTitle}>Создать организацию</p>
                 <img src={require('../images/plus.png')} style={{width: 24, height: 24}}/>
@@ -285,21 +296,26 @@ export default function MainScreen(){
         )
     }
 
-    const UserItem = ({keys, name}) => {
-        return(
+    const UserItem = ({keys, user}) => {
+        return (
             <div className={'Row MainScreenUserItem'} key={keys}>
                 <Row>
-                    <div className={'MainScreenAvatar'}><p className={'MainScreenAvatarText'}>{name.slice(0,1)}</p></div>
+                    <div className={'MainScreenAvatar'}><p
+                        className={'MainScreenAvatarText'}>{user.username.slice(0, 1)}</p></div>
                     <Column style={{justifyContent: 'center', marginLeft: 8}}>
-                        <p style={style.userItemName}>{name}</p>
-                        <p style={style.userItemEmail}>TEST@gmail.com</p>
+                        <p style={style.userItemName}>{user.firstname}</p>
+                        <p style={style.userItemEmail}>{user.mail}</p>
                     </Column>
                 </Row>
                 <Row style={{alignItems: 'center'}}>
-                    <img src={require('../images/external_link.png')} style={{width: 24, height: 24, marginRight: 5, cursor: 'pointer'}} onClick={OpenAndCloseUserProfile}/>
-                    <p style={{...style.userItemSelectOrganization, fontSize: mobile? 10 : 12, marginTop: 0}} onClick={OpenAndCloseSelectOrganization}>Выбрать организации</p>
-                    <img src={require('../images/close_big_coffee.png')} style={{width: 24, height: 24, marginRight: mobile? 5 : 18, cursor: 'pointer'}}
-                        onClick={() => DeleteUser(keys)}/>
+                    <img src={require('../images/external_link.png')}
+                         style={{width: 24, height: 24, marginRight: 5, cursor: 'pointer'}}
+                         onClick={() => OpenAndCloseUserProfile(user)}/>
+                    <p style={{...style.userItemSelectOrganization, fontSize: mobile ? 10 : 12, marginTop: 0}}
+                       onClick={OpenAndCloseSelectOrganization}>Выбрать организации</p>
+                    <img src={require('../images/close_big_coffee.png')}
+                         style={{width: 24, height: 24, marginRight: mobile ? 5 : 18, cursor: 'pointer'}}
+                         onClick={() => DeleteUser(keys)}/>
                 </Row>
             </div>
         )
@@ -336,55 +352,103 @@ export default function MainScreen(){
             setSelectOrganization('hidden')
     }
 
-    const OpenAndCloseUserProfile = () => {
-        if (userProfile === 'hidden'){
+    const OpenAndCloseUserProfile = (user) => {
+        if (userProfile === 'hidden') {
             setUserProfile('visible')
             setUserProfileData({
-                name: 'TEST',
-                firstname: 'TEST',
-                lastname: 'TEST',
-                role: 'admin',
-                email: 'TEST@gmail.com'
+                name: user.username,
+                firstname: user.firstname,
+                lastname: user.lastname,
+                role: user.role,
+                email: user.mail,
+                id: user.id
             })
-        }
-        else
+        } else
             setUserProfile('hidden')
     }
 
+    const init = async () => {
+        if (initial) return
+        setInitial(true)
+        firebase.getUserData(firebase.getMyUserUid(), (data) => {
+            setMyUserData(new User(data))
+        })
+        let users = await firebase.getAllUsers()
+        setUsers(users)
+    }
+
+    const changeUserData = () => {
+        switch (changeParametr) {
+            case 1: {
+                firebase.setUserData(selectedUser, 1, userProfileData.name)
+                break
+            }
+            case 2: {
+                firebase.setUserData(selectedUser, 2, userProfileData.firstname)
+                break
+            }
+            case 3: {
+                firebase.setUserData(selectedUser, 3, userProfileData.role)
+                break
+            }
+            case 4: {
+                firebase.setUserData(selectedUser, 4, userProfileData.lastname)
+                break
+            }
+            case 5: {
+                firebase.setUserData(selectedUser, 5, userProfileData.email)
+                break
+            }
+        }
+    }
+
+    init()
+
     let mobile = window.innerWidth < 800 && window.innerWidth > 200
 
-    return(
+    return (
         <div className={'MainBackground Column'}>
-            <Header/>
+            <Header username={myUserData.username}/>
             <div className={'Column'}>
                 <div className={'MainScreenRow'}>
                     <div className={'Column MainScreenControlBlock'}>
-                        <div className={'Row MainScreenControlBlockRow'} style={{marginTop: mobile ? 21 : 26, background: selectedPoint === 1 ? mobile ? 'rgba(118, 250, 193, 0.3)' : 'rgba(203, 197, 234, 0.2)' : 'none'}}
+                        <div className={'Row MainScreenControlBlockRow'} style={{
+                            marginTop: mobile ? 21 : 26,
+                            background: selectedPoint === 1 ? mobile ? 'rgba(118, 250, 193, 0.3)' : 'rgba(203, 197, 234, 0.2)' : 'none'
+                        }}
                              onClick={() => SelectPoint(1)}>
-                            <img src={require(mobile ? '../images/mobileWindowSidebar.png' : '../images/windowSidebar.png')} style={{
-                                width: 30, height: 30, marginLeft: mobile? 22 : 34, marginRight: 14, marginTop: 2
-                            }}/>
+                            <img
+                                src={require(mobile ? '../images/mobileWindowSidebar.png' : '../images/windowSidebar.png')}
+                                style={{
+                                    width: 30, height: 30, marginLeft: mobile ? 22 : 34, marginRight: 14, marginTop: 2
+                                }}/>
                             <p className={'MainScreenControlBlockText'}>Проекты</p>
                         </div>
-                        <div className={'Row MainScreenControlBlockRow'} style={{background: selectedPoint === 2 ? mobile ? 'rgba(118, 250, 193, 0.3)' : 'rgba(203, 197, 234, 0.2)' : 'none'}}
+                        <div className={'Row MainScreenControlBlockRow'}
+                             style={{background: selectedPoint === 2 ? mobile ? 'rgba(118, 250, 193, 0.3)' : 'rgba(203, 197, 234, 0.2)' : 'none'}}
                              onClick={() => SelectPoint(2)}>
                             <img src={require(mobile ? '../images/mobileUser.png' : '../images/user.png')} style={{
-                                width: 30, height: 30, marginLeft: mobile? 22 : 34, marginRight: 14, marginTop: 2
+                                width: 30, height: 30, marginLeft: mobile ? 22 : 34, marginRight: 14, marginTop: 2
                             }}/>
                             <p className={'MainScreenControlBlockText'}>Пользователи</p>
                         </div>
-                        <div className={'Row MainScreenControlBlockRow'} style={{marginBottom: 13, background: selectedPoint === 3 ? mobile ? 'rgba(118, 250, 193, 0.3)' : 'rgba(203, 197, 234, 0.2)' : 'none'}}
-                            onClick={() => SelectPoint(3)}>
-                            <img src={require(mobile ? '../images/mobileSettingsFuture.png' : '../images/settingsFuture.png')} style={{
-                                width: 30, height: 30, marginLeft: mobile? 22 : 34, marginRight: 14, marginTop: 2
-                            }}/>
+                        <div className={'Row MainScreenControlBlockRow'} style={{
+                            marginBottom: 13,
+                            background: selectedPoint === 3 ? mobile ? 'rgba(118, 250, 193, 0.3)' : 'rgba(203, 197, 234, 0.2)' : 'none'
+                        }}
+                             onClick={() => SelectPoint(3)}>
+                            <img
+                                src={require(mobile ? '../images/mobileSettingsFuture.png' : '../images/settingsFuture.png')}
+                                style={{
+                                    width: 30, height: 30, marginLeft: mobile ? 22 : 34, marginRight: 14, marginTop: 2
+                                }}/>
                             <p className={'MainScreenControlBlockText'}>Админ</p>
                         </div>
                     </div>
                     {
                         selectedPoint === 1 &&
-                        <Column style={mobile? {marginTop: 27} : style.projectsBlock}>
-                            <Row style={mobile? {justifyContent: 'center'} : {justifyContent: 'flex-start'}}>
+                        <Column style={mobile ? {marginTop: 27} : style.projectsBlock}>
+                            <Row style={mobile ? {justifyContent: 'center'} : {justifyContent: 'flex-start'}}>
                                 <p className={'MainScreenProjectBlockTitle'}>Ваши организации</p>
                                 {mobile &&
                                     <img src={require('../images/plusBlack.png')} style={{
@@ -392,34 +456,35 @@ export default function MainScreen(){
                                     }} onClick={() => CreateProject()}/>
                                 }
                             </Row>
-                            { projects2.map((item, i) => {
-                                    return(<div className={'Row MainScreenProjectBlockRow'} key={i}>
-                                        {item.map((item2, j) =>{
-                                            return item2 === 'create' ? mobile ? <div/> : CreateProjectBlock() : ProjectItem(item2, j)
-                                        })}
-                                    </div>)
+                            {projects2.map((item, i) => {
+                                return (<div className={'Row MainScreenProjectBlockRow'} key={i}>
+                                    {item.map((item2, j) => {
+                                        return item2 === 'create' ? mobile ?
+                                            <div/> : CreateProjectBlock() : ProjectItem(item2, j)
+                                    })}
+                                </div>)
                             })}
                         </Column>
                     }
                     {
                         selectedPoint === 2 &&
-                        <Column style={mobile? {marginTop: 27, marginLeft: 8, marginRight: 8} : style.projectsBlock}>
-                            <Row style={mobile? {justifyContent: 'center'} : {justifyContent: 'flex-start'}}>
+                        <Column style={mobile ? {marginTop: 27, marginLeft: 8, marginRight: 8} : style.projectsBlock}>
+                            <Row style={mobile ? {justifyContent: 'center'} : {justifyContent: 'flex-start'}}>
                                 <p className={'MainScreenProjectBlockTitle'}>Пользователи</p>
                                 <img src={require('../images/plusBlack.png')} style={{
                                     width: 30, height: 30, marginLeft: 12, marginTop: 5, cursor: 'pointer'
                                 }} onClick={() => OpenAndCloseAddUser()}/>
                             </Row>
-                            {users.map((item, i) => <UserItem keys={i} name={item}/>)}
+                            {users.map((item, i) => <UserItem keys={i} user={item}/>)}
                         </Column>
                     }
                     {
                         selectedPoint === 3 &&
-                        <Column style={mobile? {marginTop: 27, marginLeft: 8, marginRight: 8} : style.projectsBlock}>
+                        <Column style={mobile ? {marginTop: 27, marginLeft: 8, marginRight: 8} : style.projectsBlock}>
                             <p className={'MainScreenProjectBlockTitle'}>Админ панель</p>
-                            { projects2.map((item, i) => {
-                                return(<div className={'Row MainScreenProjectBlockRow'} key={i}>
-                                    {item.map((item2, j) =>{
+                            {projects2.map((item, i) => {
+                                return (<div className={'Row MainScreenProjectBlockRow'} key={i}>
+                                    {item.map((item2, j) => {
                                         if (item2 === 'create') return
                                         return ProjectItem(item2, j, true)
                                     })}
@@ -430,37 +495,56 @@ export default function MainScreen(){
                 </div>
             </div>
             <Column style={{
-                position: 'absolute', width: '100%', height: '100%', background: 'rgb(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center',
+                position: 'absolute',
+                width: '100%',
+                height: '100%',
+                background: 'rgb(0,0,0,0.4)',
+                justifyContent: 'center',
+                alignItems: 'center',
                 visibility: addUser
             }}>
                 <Column style={style.addUserBlock}>
                     <Row style={{alignItems: 'center', marginTop: 9, justifyContent: 'space-between'}}>
                         <p style={style.addUserBlockTitle}>Добавить нового пользователя</p>
-                        <img src={require('../images/close_big.png')} style={{width: 24, height: 24, marginRight: 13, cursor: 'pointer'}}
-                            onClick={() => OpenAndCloseAddUser()}/>
+                        <img src={require('../images/close_big.png')}
+                             style={{width: 24, height: 24, marginRight: 13, cursor: 'pointer'}}
+                             onClick={() => OpenAndCloseAddUser()}/>
                     </Row>
-                    <input style={style.addUserBlockInput}  placeholder={'Имя пользователя...'} id={'username'} defaultValue={''}/>
-                    <input style={style.addUserBlockInput}  placeholder={'Имя...'} id={'firstname'} defaultValue={''}/>
-                    <input style={style.addUserBlockInput}  placeholder={'Фамилия...'} id={'lastname'} defaultValue={''}/>
-                    <input style={style.addUserBlockInput}  placeholder={'Почта...'} id={'email'} defaultValue={''}/>
-                    <input style={style.addUserBlockInput}  placeholder={'Пароль...'} type={'password'} id={'password'} defaultValue={''}/>
-                    <input style={{...style.addUserBlockInput, marginBottom: 15}}  placeholder={'Выбрать роль...'} id={'role'} defaultValue={''}/>
-                    <input type={'submit'} value={'Добавить'} style={{marginRight: 13, marginLeft: 22, marginTop: 13, marginBottom: 15}}
+                    <input style={style.addUserBlockInput} placeholder={'Имя пользователя...'} id={'username'}
+                           defaultValue={''}/>
+                    <input style={style.addUserBlockInput} placeholder={'Имя...'} id={'firstname'} defaultValue={''}/>
+                    <input style={style.addUserBlockInput} placeholder={'Фамилия...'} id={'lastname'}
+                           defaultValue={''}/>
+                    <input style={style.addUserBlockInput} placeholder={'Почта...'} id={'email'} defaultValue={''}/>
+                    <input style={style.addUserBlockInput} placeholder={'Пароль...'} type={'password'} id={'password'}
+                           defaultValue={''}/>
+                    <input style={{...style.addUserBlockInput, marginBottom: 15}} placeholder={'Выбрать роль...'}
+                           id={'role'} defaultValue={''}/>
+                    <input type={'submit'} value={'Добавить'}
+                           style={{marginRight: 13, marginLeft: 22, marginTop: 13, marginBottom: 15}}
                            onClick={() => CreateUser()}/>
                 </Column>
             </Column>
             <Column style={{
-                position: 'absolute', width: '100%', height: '100%', background: 'rgb(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center',
+                position: 'absolute',
+                width: '100%',
+                height: '100%',
+                background: 'rgb(0,0,0,0.4)',
+                justifyContent: 'center',
+                alignItems: 'center',
                 visibility: selectOrganization
             }}>
                 <Column style={{...style.addUserBlock, width: 300}}>
                     <Row style={{marginTop: 10}}>
                         <p style={style.selectOrganizationTitle}>Организации</p>
-                        <img src={require('../images/close_big.png')} style={{width: 24, height: 24, marginRight: 10, cursor: 'pointer'}}
+                        <img src={require('../images/close_big.png')}
+                             style={{width: 24, height: 24, marginRight: 10, cursor: 'pointer'}}
                              onClick={OpenAndCloseSelectOrganization}/>
                     </Row>
-                    <div style={{borderRadius: 2, borderStyle: 'solid', borderColor: 'rgba(0, 0, 0, 0.1)',
-                        borderWidth: 0.2, marginLeft: 7, marginRight: 7}}/>
+                    <div style={{
+                        borderRadius: 2, borderStyle: 'solid', borderColor: 'rgba(0, 0, 0, 0.1)',
+                        borderWidth: 0.2, marginLeft: 7, marginRight: 7
+                    }}/>
                     <Row>
                         <p style={style.selectOrganizationMessage}>anoiby принадлежит к следующим организациям:</p>
                         <img src={require('../images/cooliconGreen.png')} style={{
@@ -473,35 +557,142 @@ export default function MainScreen(){
                 </Column>
             </Column>
             <Column style={{
-                position: 'absolute', width: '100%', height: '100%', background: 'rgb(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center',
+                position: 'absolute',
+                width: '100%',
+                height: '100%',
+                background: 'rgb(0,0,0,0.4)',
+                justifyContent: 'center',
+                alignItems: 'center',
                 visibility: userProfile
             }}>
                 <div className={'Column MainScreenUserProfileBlock'}>
                     <Row style={{marginTop: 15, alignItems: 'center', justifyContent: 'space-between'}}>
-                        <p style={style.userProfileBlockName}>{userProfileData.name}</p>
-                        <img src={require('../images/close_big.png')} style={{width: 30, height: 30, marginRight: 33, cursor: 'pointer'}}
-                             onClick={OpenAndCloseUserProfile}/>
+                        <input style={{...style.userProfileBlockName, flex: 1, borderWidth: 0, outline: 'none'}}
+                               defaultValue={userProfileData.name}
+                               onChange={(event) => {
+                                   let text = event.target.value
+                                   let user = userProfileData
+                                   user.name = text
+                                   setUserProfileData(user)
+
+                               }}
+                               onKeyDown={(event) => {
+                                   if (event.key === 'Enter') {
+                                       setOpenDialogSave(true)
+                                       setChangeParametr(1)
+                                       setSelectedUser(userProfileData.id)
+                                   }
+                               }}
+                        />
+                        <img src={require('../images/close_big.png')}
+                             style={{width: 30, height: 30, marginRight: 33, cursor: 'pointer'}}
+                             onClick={() => OpenAndCloseUserProfile(null)}/>
                     </Row>
-                    <div style={{borderRadius: 2, borderStyle: 'solid', borderColor: Color.darkGreen,
-                        borderWidth: 0.2, marginLeft: 43, marginRight: 25}}/>
+                    <div style={{
+                        borderRadius: 2, borderStyle: 'solid', borderColor: Color.darkGreen,
+                        borderWidth: 0.2, marginLeft: 43, marginRight: 25
+                    }}/>
                     <Row style={{justifyContent: 'space-between'}}>
-                        <p style={{...style.userProfileBlockTexts, marginLeft: 71, flex: 1}}>Имя: {userProfileData.firstname}</p>
-                        <p style={{...style.userProfileBlockTexts, marginRight: 71, flex: 1}}>Роль: {userProfileData.role}</p>
+                        <div style={{...style.userProfileBlockTexts, marginLeft: 71, flex: 1}}>Имя:
+                            <input style={{...style.userProfileBlockTexts, borderWidth: 0, outline: 'none'}}
+                                   defaultValue={userProfileData.firstname}
+                                   onChange={(event) => {
+                                       let text = event.target.value
+                                       let user = userProfileData
+                                       user.firstname = text
+                                       setUserProfileData(user)
+
+                                   }}
+                                   onKeyDown={(event) => {
+                                       if (event.key === 'Enter') {
+                                           setOpenDialogSave(true)
+                                           setChangeParametr(2)
+                                           setSelectedUser(userProfileData.id)
+                                       }
+                                   }}
+                            /></div>
+                        <div style={{
+                            ...style.userProfileBlockTexts,
+                            marginRight: 71,
+                            flex: 1
+                        }}>Роль: <input style={{...style.userProfileBlockTexts, borderWidth: 0, outline: 'none'}}
+                                        defaultValue={userProfileData.role}
+                                        onChange={(event) => {
+                                            let text = event.target.value
+                                            let user = userProfileData
+                                            user.role = text
+                                            setUserProfileData(user)
+
+                                        }}
+                                        onKeyDown={(event) => {
+                                            if (event.key === 'Enter') {
+                                                setOpenDialogSave(true)
+                                                setChangeParametr(3)
+                                                setSelectedUser(userProfileData.id)
+                                            }
+                                        }}
+                            /></div>
                     </Row>
                     <Row style={{justifyContent: 'space-between'}}>
-                        <p style={{...style.userProfileBlockTexts, marginLeft: 71, flex: 1}}>Фамилия: {userProfileData.lastname}</p>
-                        <p style={{...style.userProfileBlockTexts, marginRight: 71, flex: 1}}>Почта: {userProfileData.email}</p>
+                        <div style={{
+                            ...style.userProfileBlockTexts,
+                            marginLeft: 71,
+                            flex: 1
+                        }}>Фамилия: <input style={{...style.userProfileBlockTexts, borderWidth: 0, outline: 'none'}}
+                                           defaultValue={userProfileData.lastname}
+                                           onChange={(event) => {
+                                               let text = event.target.value
+                                               let user = userProfileData
+                                               user.lastname = text
+                                               setUserProfileData(user)
+
+                                           }}
+                                           onKeyDown={(event) => {
+                                               if (event.key === 'Enter') {
+                                                   setOpenDialogSave(true)
+                                                   setChangeParametr(4)
+                                                   setSelectedUser(userProfileData.id)
+                                               }
+                                           }}
+                        /></div>
+                        <div style={{
+                            ...style.userProfileBlockTexts,
+                            marginRight: 71,
+                            flex: 1
+                        }}>Почта: <input style={{...style.userProfileBlockTexts, borderWidth: 0, outline: 'none'}}
+                                         defaultValue={userProfileData.email}
+                                         onChange={(event) => {
+                                             let text = event.target.value
+                                             let user = userProfileData
+                                             user.email = text
+                                             setUserProfileData(user)
+
+                                         }}
+                                         onKeyDown={(event) => {
+                                             if (event.key === 'Enter') {
+                                                 setOpenDialogSave(true)
+                                                 setChangeParametr(5)
+                                                 setSelectedUser(userProfileData.id)
+                                             }
+                                         }}
+                        /></div>
                     </Row>
-                    <div style={{borderRadius: 2, borderStyle: 'solid', borderColor: Color.darkGreen,
-                        borderWidth: 0.2, marginLeft: 43, marginRight: 25}}/>
+                    <div style={{
+                        borderRadius: 2, borderStyle: 'solid', borderColor: Color.darkGreen,
+                        borderWidth: 0.2, marginLeft: 43, marginRight: 25
+                    }}/>
                     <div style={style.userProfileBlockCurrentTask}>
                         <p style={style.userProfileBlockCurrentTaskText}>Текущее задание</p>
                     </div>
                     <Row style={{marginTop: 14}}>
-                        <div style={{...style.userProfileBlockDarkButtons, marginLeft: mobile? 10 : 64}}>
+                        <div style={{...style.userProfileBlockDarkButtons, marginLeft: mobile ? 10 : 64}}>
                             <p style={style.userProfileBlockDarkButtonsText}>Поменять пароль</p>
                         </div>
-                        <div style={{...style.userProfileBlockDarkButtons, marginLeft: mobile? 5 : 24, marginRight: mobile? 10 : 0}}>
+                        <div style={{
+                            ...style.userProfileBlockDarkButtons,
+                            marginLeft: mobile ? 5 : 24,
+                            marginRight: mobile ? 10 : 0
+                        }}>
                             <p style={style.userProfileBlockDarkButtonsText}>Поменять выбранные задания</p>
                         </div>
                     </Row>
@@ -510,6 +701,30 @@ export default function MainScreen(){
                     </Row>
                 </div>
             </Column>
+            <Dialog
+                open={openDialogSave}
+            >
+                <DialogTitle>
+                    {"Вы хотите сохранить изменения?"}
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        После подтверждения изменения вступят в силу и их нельзя будет отменить. Вы уверены, что хотите
+                        сохранить внесенные вами изменения?
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => {
+                        setOpenDialogSave(false)
+                        changeUserData()
+                    }}>
+                        Принять
+                    </Button>
+                    <Button onClick={() => setOpenDialogSave(false)}>
+                        Отменить
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </div>
     )
 }

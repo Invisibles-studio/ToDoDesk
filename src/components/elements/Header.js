@@ -3,11 +3,7 @@ import {Row} from "./Utils";
 import {Color, Strings} from "../utils/Constants";
 import {useNavigate} from "react-router-dom";
 
-export default function Header({color = "#144AE4", bottomLine = false}){
-
-    const GetUserName = () => {
-        return 'ANOIBY'
-    }
+export default function Header({color = "#144AE4", bottomLine = false, username = ''}){
 
     const navigation = useNavigate()
 
@@ -49,7 +45,7 @@ export default function Header({color = "#144AE4", bottomLine = false}){
                     <input style={style.searchBlockInput} placeholder={'Поиск...'}/>
                     <img src={require('../images/searchIcon.png')} style={style.searchBlockImage}/>
                 </div>
-                <div className={'HeaderAvatar'}><p className={'HeaderAvatarText'}>{GetUserName().slice(0,1)}</p></div>
+                <div className={'HeaderAvatar'}><p className={'HeaderAvatarText'}>{username.slice(0,1)}</p></div>
             </Row>
         </div>
     )
