@@ -7,7 +7,19 @@ import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import {Firebase} from "../utils/Firebase.tsx";
 import {User} from "../models/User.tsx"
-import {Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle} from "@mui/material";
+
+import {
+    Alert,
+    Autocomplete,
+    Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle, Snackbar, TextField
+} from "@mui/material";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
 
 function sliceIntoChunks(arr, chunkSize) {
     const res = [];
@@ -34,6 +46,19 @@ export default function MainScreen() {
     let [openDialogSave, setOpenDialogSave] = useState(false)
     let [changeParametr, setChangeParametr] = useState(0)
     let [selectedUser, setSelectedUser] = useState('')
+
+    let [addUserUsername, setAddUserUsername] = useState('')
+    let [addUserFirstname, setAddUserFirstname] = useState('')
+    let [addUserLastname, setAddUserLastname] = useState('')
+    let [addUserEmail, setAddUserEmail] = useState('')
+    let [addUserPassword, setAddUserPassword] = useState('')
+
+    let [userRole, setUserRole] = useState('')
+    let usersRole = ['Сотрудник', 'Администратор', 'СуперАдминистратор']
+
+    let [showSnackbarError, setShowSnackbarError] = useState(false)
+    let [showSetNameProject, setShowSetNameProject] = useState(false)
+    let [projectName, setProjectName] = useState('')
 
     let style = {
         controlBlock: {
@@ -260,36 +285,32 @@ export default function MainScreen() {
         setSelectedPoint(type)
     }
 
-    const DeleteUser = (index) => {
-        let list = users
-        list.splice(index, 1)
-        setUsers([...list])
-    }
-
-    const ProjectItem = (name, index, admin = false) => {
+    const ProjectItem = (object, index, admin = false) => {
         return (
             <div className={'Column MainScreenProjectBlock'} key={index}
-                 onClick={() => admin ? {} : navigation('/ToDoDesk/desk/' + name)}>
-                <p style={style.projectBlockTitle}>{name}</p>
+                 onClick={() => admin ? {} : navigation('/ToDoDesk/desk/' + object.id)}>
+                <p style={style.projectBlockTitle}>{object.name}</p>
                 {admin && <img src={require('../images/download.png')} style={{width: 24, height: 24}}/>}
             </div>
         )
     }
 
-    const CreateProject = () => {
-
-        let list = projects
-        list = list.reverse()
-        list.push('test')
-        list = list.reverse()
+    const updateListProject = (projectsList) => {
+        let list = projectsList
+        list.push('create')
         setProjects(list)
         let list2 = mobile ? sliceIntoChunks(list, 2) : sliceIntoChunks(list, 4)
         setProjects2(list2)
     }
 
+    const CreateProject = () => {
+        firebase.createProject(projectName)
+        firebase.getUserProjects((projects) => updateListProject(projects))
+    }
+
     const CreateProjectBlock = () => {
         return (
-            <Column style={{...style.createProjectBlock}} onClick={() => CreateProject()}>
+            <Column style={{...style.createProjectBlock}} onClick={() => setShowSetNameProject(true)}>
                 <p style={style.createProjectBlockTitle}>Создать организацию</p>
                 <img src={require('../images/plus.png')} style={{width: 24, height: 24}}/>
             </Column>
@@ -309,33 +330,66 @@ export default function MainScreen() {
                 </Row>
                 <Row style={{alignItems: 'center'}}>
                     <img src={require('../images/external_link.png')}
-                         style={{width: 24, height: 24, marginRight: 5, cursor: 'pointer'}}
+                         style={{width: 24, height: 24, marginRight: 5, cursor: 'pointer', visibility: myUserData.role !== usersRole[0] ? 'visible' : 'hidden'}}
                          onClick={() => OpenAndCloseUserProfile(user)}/>
-                    <p style={{...style.userItemSelectOrganization, fontSize: mobile ? 10 : 12, marginTop: 0}}
+                    <p style={{...style.userItemSelectOrganization, fontSize: mobile ? 10 : 12, marginTop: 0, visibility: myUserData.role !== usersRole[0] ? 'visible' : 'hidden'}}
                        onClick={OpenAndCloseSelectOrganization}>Выбрать организации</p>
-                    <img src={require('../images/close_big_coffee.png')}
-                         style={{width: 24, height: 24, marginRight: mobile ? 5 : 18, cursor: 'pointer'}}
-                         onClick={() => DeleteUser(keys)}/>
                 </Row>
             </div>
         )
     }
 
-    const CreateUser = () => {
-        let username = document.getElementById('username').value
-        document.getElementById('username').value = ''
-        let firstname = document.getElementById('firstname').value
-        document.getElementById('firstname').value = ''
-        let lastname = document.getElementById('lastname').value
-        document.getElementById('lastname').value = ''
-        let email = document.getElementById('email').value
-        document.getElementById('email').value = ''
-        let password = document.getElementById('password').value
-        document.getElementById('password').value = ''
-        let role = document.getElementById('role').value
-        document.getElementById('role').value = ''
-        setUsers([...users, username])
+    const CreateUser = data => {
+        updateAddUserFields()
+        let username = addUserUsername
+        let firstname = addUserFirstname
+        let lastname = addUserLastname
+        let email = addUserEmail
+        let password = addUserPassword
+
+        let AList = email.split("@")
+        if (AList.length === 1) return
+
+        let part2email = AList[1].split(".")
+        if (part2email.length === 1 || part2email[0].length === 0) return
+        if (part2email[1].length === 0) return
+
+        let user = new User({
+            username: username,
+            firstname: firstname,
+            lastname: lastname,
+            mail: email,
+            role: userRole,
+            id: ''
+        })
+        //setUsers([...users, ])
+        firebase.createUser(user, password)
+        setUserRole('')
+        setAddUserUsername('')
+        setAddUserPassword('')
+        setAddUserFirstname('')
+        setAddUserEmail('')
+        setAddUserLastname('')
+
+        let newList = users
+        newList.push(user)
+
+        setUsers(newList)
+
         OpenAndCloseAddUser()
+    }
+
+    const updateAddUserFields = () => {
+        let username = document.getElementById('username').value
+        let firstname = document.getElementById('firstname').value
+        let lastname = document.getElementById('lastname').value
+        let email = document.getElementById('email').value
+        let password = document.getElementById('password').value
+        setAddUserUsername(username)
+        setAddUserLastname(lastname)
+        setAddUserPassword(password)
+        setAddUserEmail(email)
+        setAddUserFirstname(firstname)
     }
 
     const OpenAndCloseAddUser = () => {
@@ -370,6 +424,14 @@ export default function MainScreen() {
     const init = async () => {
         if (initial) return
         setInitial(true)
+        if (firebase.getMyUserUid() === null){
+            console.log("We are not authed")
+            navigation('/ToDoDesk')
+        }
+
+        firebase.getUserProjects((projectsList) => {
+            updateListProject(projectsList)
+        })
         firebase.getUserData(firebase.getMyUserUid(), (data) => {
             setMyUserData(new User(data))
         })
@@ -402,9 +464,337 @@ export default function MainScreen() {
         }
     }
 
+    const TextInput = ({value, parameter}) => {
+        return <input style={{marginLeft: 40, flex: 1, borderWidth: 0, outline: 'none', fontWeight: '700', fontSize: 30, color: Color.darkGreen,}}
+                      defaultValue={value}
+                      onChange={(event) => {
+                          let text = event.target.value
+                          let user = userProfileData
+                          if (parameter === 1){
+                              user.name = text
+                          }
+                          setUserProfileData(user)
+
+                      }}
+                      onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                              setOpenDialogSave(true)
+                              setChangeParametr(parameter)
+                              setSelectedUser(userProfileData.id)
+                          }
+                      }}
+        />
+    }
+
+    const UserProfile = () => {
+        if (mobile){
+            return <Column style={{position: 'absolute', width: '100%', height: '100%', background: 'white', visibility: userProfile}}>
+
+                <Row style={{ marginTop: 50}}>
+                    <input style={{...style.userProfileBlockTexts, borderWidth: 0, outline: 'none', flex: 1, textAlign: 'center', fontSize: 20}}
+                           defaultValue={userProfileData.name}
+                           onChange={(event) => {
+                               let text = event.target.value
+                               let user = userProfileData
+                               user.role = text
+                               setUserProfileData(user)
+
+                           }}
+                           onKeyDown={(event) => {
+                               if (event.key === 'Enter') {
+                                   setOpenDialogSave(true)
+                                   setChangeParametr(3)
+                                   setSelectedUser(userProfileData.id)
+                               }
+                           }}
+                    />
+                    <img src={require('../images/close_big.png')}
+                         style={{width: 30, height: 30, cursor: 'pointer'}}
+                         onClick={() => OpenAndCloseUserProfile(null)}/>
+                </Row>
+                <div style={{
+                    borderRadius: 2, borderStyle: 'solid', borderColor: Color.darkGreen,
+                    borderWidth: 0.2, marginTop: 10
+                }}/>
+                <div style={{...style.userProfileBlockTexts, marginLeft: 31}}>Имя:
+                    <input style={{...style.userProfileBlockTexts, borderWidth: 0, outline: 'none'}}
+                           defaultValue={userProfileData.firstname}
+                           onChange={(event) => {
+                               let text = event.target.value
+                               let user = userProfileData
+                               user.firstname = text
+                               setUserProfileData(user)
+
+                           }}/>
+                </div>
+                <div style={{...style.userProfileBlockTexts, marginLeft: 31}}>
+                    Фамилия: <input style={{...style.userProfileBlockTexts, borderWidth: 0, outline: 'none'}}
+                                   defaultValue={userProfileData.lastname}
+                                   onChange={(event) => {
+                                       let text = event.target.value
+                                       let user = userProfileData
+                                       user.lastname = text
+                                       setUserProfileData(user)
+
+                                   }}
+                                   onKeyDown={(event) => {
+                                       if (event.key === 'Enter') {
+                                           setOpenDialogSave(true)
+                                           setChangeParametr(4)
+                                           setSelectedUser(userProfileData.id)
+                                       }
+                                   }}
+                /></div>
+                <div style={{...style.userProfileBlockTexts, marginLeft: 31}}>
+                    Почта: <input style={{...style.userProfileBlockTexts, borderWidth: 0, outline: 'none'}}
+                                 defaultValue={userProfileData.email}
+                                 onChange={(event) => {
+                                     let text = event.target.value
+                                     let user = userProfileData
+                                     user.email = text
+                                     setUserProfileData(user)
+
+                                 }}
+                                 onKeyDown={(event) => {
+                                     if (event.key === 'Enter') {
+                                         setOpenDialogSave(true)
+                                         setChangeParametr(5)
+                                         setSelectedUser(userProfileData.id)
+                                     }
+                                 }}
+                /></div>
+                <Autocomplete
+                    style={{...style.addUserBlockInput, marginBottom: 15, borderWidth: 0,}}
+                    disablePortal
+                    defaultValue={userProfileData.role}
+                    onChange={(event, newValue) => {
+                        updateAddUserFields()
+                        let text = newValue
+                        let user = userProfileData
+                        user.role = text
+                        setUserProfileData(user)
+                    }}
+                    options={usersRole}
+                    sx={{ width: 300 }}
+                    renderInput={(params) => <TextField {...params} label="Роль" onKeyDown={event => {
+                        if (event.key === 'Enter') {
+                            setOpenDialogSave(true)
+                            setChangeParametr(3)
+                            setSelectedUser(userProfileData.id)
+                        }
+                    }
+                    }/>}
+                />
+                <div style={{
+                    borderRadius: 2, borderStyle: 'solid', borderColor: Color.darkGreen,
+                    borderWidth: 0.2, marginTop: 10
+                }}/>
+                <div style={style.userProfileBlockCurrentTask}>
+                    <p style={style.userProfileBlockCurrentTaskText}>Текущее задание</p>
+                </div>
+                <Row style={{marginTop: 14}}>
+                    <div style={{...style.userProfileBlockDarkButtons, marginLeft: mobile ? 10 : 64}}>
+                        <p style={style.userProfileBlockDarkButtonsText}>Поменять пароль</p>
+                    </div>
+                    <div style={{
+                        ...style.userProfileBlockDarkButtons,
+                        marginLeft: mobile ? 5 : 24,
+                        marginRight: mobile ? 10 : 0
+                    }}>
+                        <p style={style.userProfileBlockDarkButtonsText}>Поменять выбранные задания</p>
+                    </div>
+                </Row>
+                <Row style={{justifyContent: 'center', marginTop: 58, marginBottom: 20}}>
+                    <Calendar/>
+                </Row>
+            </Column>
+        }
+        else{
+            return <Column style={{
+                position: 'absolute',
+                width: '100%',
+                height: '100%',
+                background: 'rgb(0,0,0,0.4)',
+                justifyContent: 'center',
+                alignItems: 'center',
+                visibility: userProfile
+            }}>
+                <div className={'Column MainScreenUserProfileBlock'}>
+                    <Row style={{marginTop: 15, alignItems: 'center', justifyContent: 'space-between', flex: 1}}>
+                        <TextInput value={userProfileData.name} parameter={1}/>
+                        <div style={{flex: 0.2, marginRight: 20, justifyContent: 'right', display: 'flex'}}>
+                            <img src={require('../images/close_big.png')}
+                                 style={{width: 30, height: 30, cursor: 'pointer'}}
+                                 onClick={() => OpenAndCloseUserProfile(null)}/>
+                        </div>
+
+                    </Row>
+                    <div style={{
+                        borderRadius: 2, borderStyle: 'solid', borderColor: Color.darkGreen,
+                        borderWidth: 0.2, marginLeft: 43, marginRight: 25
+                    }}/>
+                    <Row style={{justifyContent: 'space-between'}}>
+                        <div style={{...style.userProfileBlockTexts, marginLeft: 71, flex: 1}}>Имя: <input style={{...style.userProfileBlockTexts, borderWidth: 0, outline: 'none'}}
+                                   defaultValue={userProfileData.firstname}
+                                   onChange={(event) => {
+                                       let text = event.target.value
+                                       let user = userProfileData
+                                       user.firstname = text
+                                       setUserProfileData(user)
+
+                                   }}
+                                   onKeyDown={(event) => {
+                                       if (event.key === 'Enter') {
+                                           setOpenDialogSave(true)
+                                           setChangeParametr(2)
+                                           setSelectedUser(userProfileData.id)
+                                       }
+                                   }}
+                            /></div>
+                        <div style={{
+                            ...style.userProfileBlockTexts,
+                            marginRight: 71,
+                            flex: 1
+                        }}>Фамилия: <input style={{...style.userProfileBlockTexts, borderWidth: 0, outline: 'none'}}
+                                           defaultValue={userProfileData.lastname}
+                                           onChange={(event) => {
+                                               let text = event.target.value
+                                               let user = userProfileData
+                                               user.lastname = text
+                                               setUserProfileData(user)
+
+                                           }}
+                                           onKeyDown={(event) => {
+                                               if (event.key === 'Enter') {
+                                                   setOpenDialogSave(true)
+                                                   setChangeParametr(4)
+                                                   setSelectedUser(userProfileData.id)
+                                               }
+                                           }}
+                        /></div>
+                    </Row>
+                    <Row style={{marginLeft: 71, }}>
+                        <div style={{
+                            ...style.userProfileBlockTexts,
+                        }}>Почта: <input style={{...style.userProfileBlockTexts, borderWidth: 0, outline: 'none'}}
+                                         defaultValue={userProfileData.email}
+                                         onChange={(event) => {
+                                             let text = event.target.value
+                                             let user = userProfileData
+                                             user.email = text
+                                             setUserProfileData(user)
+
+                                         }}
+                                         onKeyDown={(event) => {
+                                             if (event.key === 'Enter') {
+                                                 setOpenDialogSave(true)
+                                                 setChangeParametr(5)
+                                                 setSelectedUser(userProfileData.id)
+                                             }
+                                         }}
+                        /></div>
+                    </Row>
+                    <div style={{...style.userProfileBlockTexts, marginLeft: 51, flex: 1}}>
+                        <Autocomplete
+                            style={{...style.addUserBlockInput, marginBottom: 15, borderWidth: 0,}}
+                            disablePortal
+                            defaultValue={userProfileData.role}
+                            onChange={(event, newValue) => {
+                                updateAddUserFields()
+                                let text = newValue
+                                let user = userProfileData
+                                user.role = text
+                                setUserProfileData(user)
+                            }}
+                            options={usersRole}
+                            sx={{ width: 300 }}
+                            renderInput={(params) => <TextField {...params} label="Роль" onKeyDown={event => {
+                                if (event.key === 'Enter') {
+                                    setOpenDialogSave(true)
+                                    setChangeParametr(3)
+                                    setSelectedUser(userProfileData.id)
+                                }
+                            }
+                            }/>}
+                        />
+                    </div>
+                    <div style={{
+                        borderRadius: 2, borderStyle: 'solid', borderColor: Color.darkGreen,
+                        borderWidth: 0.2, marginLeft: 43, marginRight: 25
+                    }}/>
+                    <div style={style.userProfileBlockCurrentTask}>
+                        <p style={style.userProfileBlockCurrentTaskText}>Текущее задание</p>
+                    </div>
+                    <Row style={{marginTop: 14}}>
+                        <div style={{...style.userProfileBlockDarkButtons, marginLeft: mobile ? 10 : 64}}>
+                            <p style={style.userProfileBlockDarkButtonsText}>Поменять пароль</p>
+                        </div>
+                        <div style={{
+                            ...style.userProfileBlockDarkButtons,
+                            marginLeft: mobile ? 5 : 24,
+                            marginRight: mobile ? 10 : 0
+                        }}>
+                            <p style={style.userProfileBlockDarkButtonsText}>Поменять выбранные задания</p>
+                        </div>
+                    </Row>
+                    <Row style={{justifyContent: 'center', marginTop: 58, marginBottom: 20}}>
+                        <Calendar/>
+                    </Row>
+                </div>
+            </Column>
+        }
+    }
+
+    const AddUser = () => {
+        return <Column style={{
+            position: 'absolute',
+            width: '100%',
+            height: '100%',
+            background: 'rgb(0,0,0,0.4)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            visibility: addUser
+        }}>
+            <Column style={style.addUserBlock}>
+                <Row style={{alignItems: 'center', marginTop: 9, justifyContent: 'space-between'}}>
+                    <p style={style.addUserBlockTitle}>Добавить нового пользователя</p>
+                    <img src={require('../images/close_big.png')}
+                         style={{width: 24, height: 24, marginRight: 13, cursor: 'pointer'}}
+                         onClick={() => OpenAndCloseAddUser()} />
+                </Row>
+                <input style={style.addUserBlockInput} placeholder={'Имя пользователя...'} id={'username'}
+                       defaultValue={addUserUsername} />
+                <input style={style.addUserBlockInput} placeholder={'Имя...'} id={'firstname'} defaultValue={addUserFirstname} />
+                <input style={style.addUserBlockInput} placeholder={'Фамилия...'} id={'lastname'}
+                       defaultValue={addUserLastname} />
+                <input style={style.addUserBlockInput} placeholder={'Почта...'} id={'email'} defaultValue={addUserEmail} />
+                <input style={style.addUserBlockInput} placeholder={'Пароль...'} type={'password'} id={'password'}
+                       defaultValue={addUserPassword} />
+                <Autocomplete
+                    style={{...style.addUserBlockInput, marginBottom: 15, borderWidth: 0, width: 340}}
+                    disablePortal
+                    value={userRole}
+                    onChange={(event, newValue) => {
+                        updateAddUserFields()
+                        setUserRole(newValue);
+                    }}
+                    options={usersRole}
+                    sx={{ width: 300 }}
+                    renderInput={(params) => <TextField {...params} label="Роль"/>}
+                />
+                <input type={'submit'} value={'Добавить'} style={{marginRight: 13, marginLeft: 22, marginTop: 13, marginBottom: 15}} onClick={() => {
+                    updateAddUserFields()
+                    CreateUser()
+                }
+                } />
+            </Column>
+        </Column>
+    }
+
     init()
 
     let mobile = window.innerWidth < 800 && window.innerWidth > 200
+    let width = window.innerWidth
 
     return (
         <div className={'MainBackground Column'}>
@@ -494,37 +884,11 @@ export default function MainScreen() {
                     }
                 </div>
             </div>
-            <Column style={{
-                position: 'absolute',
-                width: '100%',
-                height: '100%',
-                background: 'rgb(0,0,0,0.4)',
-                justifyContent: 'center',
-                alignItems: 'center',
-                visibility: addUser
-            }}>
-                <Column style={style.addUserBlock}>
-                    <Row style={{alignItems: 'center', marginTop: 9, justifyContent: 'space-between'}}>
-                        <p style={style.addUserBlockTitle}>Добавить нового пользователя</p>
-                        <img src={require('../images/close_big.png')}
-                             style={{width: 24, height: 24, marginRight: 13, cursor: 'pointer'}}
-                             onClick={() => OpenAndCloseAddUser()}/>
-                    </Row>
-                    <input style={style.addUserBlockInput} placeholder={'Имя пользователя...'} id={'username'}
-                           defaultValue={''}/>
-                    <input style={style.addUserBlockInput} placeholder={'Имя...'} id={'firstname'} defaultValue={''}/>
-                    <input style={style.addUserBlockInput} placeholder={'Фамилия...'} id={'lastname'}
-                           defaultValue={''}/>
-                    <input style={style.addUserBlockInput} placeholder={'Почта...'} id={'email'} defaultValue={''}/>
-                    <input style={style.addUserBlockInput} placeholder={'Пароль...'} type={'password'} id={'password'}
-                           defaultValue={''}/>
-                    <input style={{...style.addUserBlockInput, marginBottom: 15}} placeholder={'Выбрать роль...'}
-                           id={'role'} defaultValue={''}/>
-                    <input type={'submit'} value={'Добавить'}
-                           style={{marginRight: 13, marginLeft: 22, marginTop: 13, marginBottom: 15}}
-                           onClick={() => CreateUser()}/>
-                </Column>
-            </Column>
+
+            <UserProfile/>
+
+            <AddUser/>
+
             <Column style={{
                 position: 'absolute',
                 width: '100%',
@@ -556,154 +920,8 @@ export default function MainScreen() {
                     </Column>
                 </Column>
             </Column>
-            <Column style={{
-                position: 'absolute',
-                width: '100%',
-                height: '100%',
-                background: 'rgb(0,0,0,0.4)',
-                justifyContent: 'center',
-                alignItems: 'center',
-                visibility: userProfile
-            }}>
-                <div className={'Column MainScreenUserProfileBlock'}>
-                    <Row style={{marginTop: 15, alignItems: 'center', justifyContent: 'space-between'}}>
-                        <input style={{...style.userProfileBlockName, flex: 1, borderWidth: 0, outline: 'none'}}
-                               defaultValue={userProfileData.name}
-                               onChange={(event) => {
-                                   let text = event.target.value
-                                   let user = userProfileData
-                                   user.name = text
-                                   setUserProfileData(user)
 
-                               }}
-                               onKeyDown={(event) => {
-                                   if (event.key === 'Enter') {
-                                       setOpenDialogSave(true)
-                                       setChangeParametr(1)
-                                       setSelectedUser(userProfileData.id)
-                                   }
-                               }}
-                        />
-                        <img src={require('../images/close_big.png')}
-                             style={{width: 30, height: 30, marginRight: 33, cursor: 'pointer'}}
-                             onClick={() => OpenAndCloseUserProfile(null)}/>
-                    </Row>
-                    <div style={{
-                        borderRadius: 2, borderStyle: 'solid', borderColor: Color.darkGreen,
-                        borderWidth: 0.2, marginLeft: 43, marginRight: 25
-                    }}/>
-                    <Row style={{justifyContent: 'space-between'}}>
-                        <div style={{...style.userProfileBlockTexts, marginLeft: 71, flex: 1}}>Имя:
-                            <input style={{...style.userProfileBlockTexts, borderWidth: 0, outline: 'none'}}
-                                   defaultValue={userProfileData.firstname}
-                                   onChange={(event) => {
-                                       let text = event.target.value
-                                       let user = userProfileData
-                                       user.firstname = text
-                                       setUserProfileData(user)
-
-                                   }}
-                                   onKeyDown={(event) => {
-                                       if (event.key === 'Enter') {
-                                           setOpenDialogSave(true)
-                                           setChangeParametr(2)
-                                           setSelectedUser(userProfileData.id)
-                                       }
-                                   }}
-                            /></div>
-                        <div style={{
-                            ...style.userProfileBlockTexts,
-                            marginRight: 71,
-                            flex: 1
-                        }}>Роль: <input style={{...style.userProfileBlockTexts, borderWidth: 0, outline: 'none'}}
-                                        defaultValue={userProfileData.role}
-                                        onChange={(event) => {
-                                            let text = event.target.value
-                                            let user = userProfileData
-                                            user.role = text
-                                            setUserProfileData(user)
-
-                                        }}
-                                        onKeyDown={(event) => {
-                                            if (event.key === 'Enter') {
-                                                setOpenDialogSave(true)
-                                                setChangeParametr(3)
-                                                setSelectedUser(userProfileData.id)
-                                            }
-                                        }}
-                            /></div>
-                    </Row>
-                    <Row style={{justifyContent: 'space-between'}}>
-                        <div style={{
-                            ...style.userProfileBlockTexts,
-                            marginLeft: 71,
-                            flex: 1
-                        }}>Фамилия: <input style={{...style.userProfileBlockTexts, borderWidth: 0, outline: 'none'}}
-                                           defaultValue={userProfileData.lastname}
-                                           onChange={(event) => {
-                                               let text = event.target.value
-                                               let user = userProfileData
-                                               user.lastname = text
-                                               setUserProfileData(user)
-
-                                           }}
-                                           onKeyDown={(event) => {
-                                               if (event.key === 'Enter') {
-                                                   setOpenDialogSave(true)
-                                                   setChangeParametr(4)
-                                                   setSelectedUser(userProfileData.id)
-                                               }
-                                           }}
-                        /></div>
-                        <div style={{
-                            ...style.userProfileBlockTexts,
-                            marginRight: 71,
-                            flex: 1
-                        }}>Почта: <input style={{...style.userProfileBlockTexts, borderWidth: 0, outline: 'none'}}
-                                         defaultValue={userProfileData.email}
-                                         onChange={(event) => {
-                                             let text = event.target.value
-                                             let user = userProfileData
-                                             user.email = text
-                                             setUserProfileData(user)
-
-                                         }}
-                                         onKeyDown={(event) => {
-                                             if (event.key === 'Enter') {
-                                                 setOpenDialogSave(true)
-                                                 setChangeParametr(5)
-                                                 setSelectedUser(userProfileData.id)
-                                             }
-                                         }}
-                        /></div>
-                    </Row>
-                    <div style={{
-                        borderRadius: 2, borderStyle: 'solid', borderColor: Color.darkGreen,
-                        borderWidth: 0.2, marginLeft: 43, marginRight: 25
-                    }}/>
-                    <div style={style.userProfileBlockCurrentTask}>
-                        <p style={style.userProfileBlockCurrentTaskText}>Текущее задание</p>
-                    </div>
-                    <Row style={{marginTop: 14}}>
-                        <div style={{...style.userProfileBlockDarkButtons, marginLeft: mobile ? 10 : 64}}>
-                            <p style={style.userProfileBlockDarkButtonsText}>Поменять пароль</p>
-                        </div>
-                        <div style={{
-                            ...style.userProfileBlockDarkButtons,
-                            marginLeft: mobile ? 5 : 24,
-                            marginRight: mobile ? 10 : 0
-                        }}>
-                            <p style={style.userProfileBlockDarkButtonsText}>Поменять выбранные задания</p>
-                        </div>
-                    </Row>
-                    <Row style={{justifyContent: 'center', marginTop: 58, marginBottom: 20}}>
-                        <Calendar/>
-                    </Row>
-                </div>
-            </Column>
-            <Dialog
-                open={openDialogSave}
-            >
+            <Dialog open={openDialogSave}>
                 <DialogTitle>
                     {"Вы хотите сохранить изменения?"}
                 </DialogTitle>
@@ -723,6 +941,39 @@ export default function MainScreen() {
                     <Button onClick={() => setOpenDialogSave(false)}>
                         Отменить
                     </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Snackbar open={showSnackbarError} autoHideDuration={6000} onClose={() => setShowSnackbarError(false)}>
+                <Alert onClose={() => setShowSnackbarError(false)} severity="error" sx={{ width: '100%' }}>
+                    Ошибка!
+                </Alert>
+            </Snackbar>
+
+            <Dialog open={showSetNameProject} onClose={() => setShowSetNameProject(false)}>
+                <DialogTitle>Создание организации</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Введите название организации.
+                    </DialogContentText>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="Название организации"
+                        type="email"
+                        fullWidth
+                        variant="standard"
+                        onChange={(event) => {
+                            setProjectName(event.target.value)
+                        }}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setShowSetNameProject(false)}>Отмена</Button>
+                    <Button onClick={() => {
+                        setShowSetNameProject(false)
+                        CreateProject()
+                    }}>Создать</Button>
                 </DialogActions>
             </Dialog>
         </div>
