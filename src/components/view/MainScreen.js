@@ -843,7 +843,7 @@ export default function MainScreen() {
                                 {mobile &&
                                     <img src={require('../images/plusBlack.png')} style={{
                                         width: 30, height: 30, marginLeft: 12, marginTop: 5, cursor: 'pointer'
-                                    }} onClick={() => CreateProject()}/>
+                                    }} onClick={() => setShowSetNameProject(true)}/>
                                 }
                             </Row>
                             {projects2.map((item, i) => {

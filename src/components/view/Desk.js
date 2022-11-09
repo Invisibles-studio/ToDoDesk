@@ -9,6 +9,8 @@ import {Firebase} from "../utils/Firebase.tsx";
 import {Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField} from "@mui/material";
 import {Task} from "../models/Task.tsx";
 import { generateUniqueID } from "web-vitals/dist/modules/lib/generateUniqueID";
+import {Col, Image} from "react-bootstrap";
+import {set} from "firebase/database";
 
 export default function Desk(){
 
@@ -269,6 +271,9 @@ export default function Desk(){
     let [nameTask, setNameTask] = useState('')
     let [columnIndex, setColumnIndex] = useState(0)
 
+    let [taskDescription, setTaskDescription] = useState('')
+    let [taskComment, setTaskComment] = useState('')
+
     let stateLists = [
         [commonList, setCommonList, commonHeight, setCommonHeight],
         [mediumList, setMediumList, mediumHeight, setMediumHeight],
@@ -378,6 +383,8 @@ export default function Desk(){
     const ToDoListItemComponent = ({task, keys, columnName}) => {
         return(
             <DraggableRow key={keys} style={style.todoItem} onClick={() => {
+                setTaskComment('')
+                setTaskDescription(task.description)
                 setSelectedTask(task)
                 OpenAndCloseMenuBlock()
             }}
@@ -488,11 +495,21 @@ export default function Desk(){
                         </Row>
                     </Row>
                     <Row style={{marginLeft: mobile? 64: 94}}>
-                        <textarea style={style.menuBlockDescriptionBlock} placeholder={'Добавьте более детальное описание...'}/>
+                        <textarea style={style.menuBlockDescriptionBlock} placeholder={'Добавьте более детальное описание...'}
+                                  onChange={(e) => setTaskDescription(e.target.value)} value={taskDescription}/>
                     </Row>
                     <Row style={{marginLeft: mobile? 64: 94, marginTop: 10}}>
-                        <input style={style.menuBlockDescriptionButton} type={'submit'} value={"Сохранить"}/>
-                        <input style={{...style.menuBlockDescriptionButton, background: Color.darkGreen, marginLeft: 6}} type={'submit'} value={"Отменить"}/>
+                        <input style={style.menuBlockDescriptionButton} type={'submit'} value={"Сохранить"}
+                            onClick={() => {
+                                let task = selectedTask
+                                task.description = taskDescription
+                                setSelectedTask(task)
+                                firebase.updateTask(task)
+                            }}/>
+                        <input style={{...style.menuBlockDescriptionButton, background: Color.darkGreen, marginLeft: 6}} type={'submit'}
+                               value={"Отменить"} onClick={() => {
+                                   setTaskDescription(selectedTask.description)
+                        }}/>
                     </Row>
                     <Row style={{marginLeft: mobile? 10 : 38, marginTop: 42}}>
                         <img src={require('../images/message.png')} style={{width: 30, height: 30}}/>
@@ -500,8 +517,61 @@ export default function Desk(){
                     </Row>
                     <Row style={{marginLeft: mobile? 10: 35, marginTop: 24, alignItems: 'center', marginRight: mobile? 20: 0, marginBottom: mobile? 0: 20}}>
                         <div style={style.avatar}><p style={style.avatarText}>{GetUserName().slice(0,1)}</p></div>
-                        <input style={style.menuBlockCommentsInput} type={"text"} placeholder={'Напишите коментарий...'}/>
+                        <input style={style.menuBlockCommentsInput} type={"text"} placeholder={'Напишите коментарий...'}
+                               value={taskComment}
+                               onChange={(e) => setTaskComment(e.target.value)}
+                               onKeyDown={(e) => {
+                                if (e.key === "Enter"){
+                                    if (taskComment.length === 0) return
+
+                                    let task = selectedTask
+                                    if (task.comments === undefined) task.comments = []
+                                    task.comments.push(
+                                        {
+                                            userId: myUserData.id,
+                                            username: myUserData.username,
+                                            text: taskComment,
+                                            commentId: generateUniqueID()
+                                        }
+                                    )
+                                    firebase.updateTask(task)
+                                    setTaskComment('')
+                                    setSelectedTask(task)
+                                }
+                            }
+                        }/>
                     </Row>
+                    <Column style={{
+                        overflowY: 'scroll',
+                        height: selectedTask.comments !== undefined &&
+                        selectedTask.comments.length < 6 ? selectedTask.comments.length*60 :
+                            selectedTask.comments === undefined ? 0 : 300
+                    }}>
+                        {selectedTask.comments !== undefined && selectedTask.comments.map((comment, i) => {
+                            return <Row style={{marginLeft: mobile? 10: 35, alignItems: 'center', marginRight: mobile? 20: 0, marginBottom: mobile? 0: 20}}>
+                                <div style={style.avatar}><p style={style.avatarText}>{comment.username.slice(0,1)}</p></div>
+                                <div style={{...style.menuBlockCommentsInput, alignItems: 'center', display: 'flex'}}>
+                                    <span style={{marginLeft: 20}}>{comment.text}</span>
+                                </div>
+                                {
+                                    comment.userId === myUserData.id &&
+                                    <img src={require('../images/close_big.png')} style={{width: 20, height: 20, marginLeft: 10, cursor: "pointer"}}
+                                        onClick={async () => {
+                                            let task = selectedTask
+                                            let comments = task.comments.filter(item => item.commentId !== comment.commentId)
+                                            task.comments = comments
+                                            firebase.updateTask(task)
+                                            await setSelectedTask(task)
+                                            await setTaskComment(' ')
+                                            await setTaskComment('')
+
+                                        }}
+                                    />
+                                }
+                            </Row>
+                        })}
+                    </Column>
+
                     <Column style={{position: 'absolute', alignItems: 'flex-end', width: mobile? '100%':648, visibility: receptionBlock}}
                         onClick={() => OpenAndCloseReceptionBlock()}>
                         <Column style={style.menuBlockReceptionBlock}>
@@ -510,9 +580,27 @@ export default function Desk(){
                                 <img src={require('../images/close_big.png')} style={{width: 14, height: 14, cursor: 'pointer', marginRight: 8}}
                                      onClick={() => OpenAndCloseReceptionBlock()}/>
                             </Row>
-                            <input type={'submit'} value={'Один раз в день'} style={style.menuBlockReceptionBlockButton}/>
-                            <input type={'submit'} value={'Один раз в неделю'} style={style.menuBlockReceptionBlockButton}/>
-                            <input type={'submit'} value={'Один раз в месяц'} style={{...style.menuBlockReceptionBlockButton, marginBottom: 14}}/>
+                            <input type={'submit'} value={'Один раз в день'} style={style.menuBlockReceptionBlockButton}
+                                   onClick={() => {
+                                       let task = selectedTask
+                                       task.repeat = 1
+                                       firebase.updateTask(task)
+                                       setSelectedTask(task)
+                            }}/>
+                            <input type={'submit'} value={'Один раз в неделю'} style={style.menuBlockReceptionBlockButton}
+                                   onClick={() => {
+                                       let task = selectedTask
+                                       task.repeat = 2
+                                       firebase.updateTask(task)
+                                       setSelectedTask(task)
+                                   }}/>
+                            <input type={'submit'} value={'Один раз в месяц'} style={{...style.menuBlockReceptionBlockButton, marginBottom: 14}}
+                                   onClick={() => {
+                                       let task = selectedTask
+                                       task.repeat = 3
+                                       firebase.updateTask(task)
+                                       setSelectedTask(task)
+                                   }}/>
 
                         </Column>
                     </Column>
