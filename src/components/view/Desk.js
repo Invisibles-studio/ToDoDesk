@@ -343,7 +343,7 @@ export default function Desk(){
 
         task.columnName = dataToDoList[elementColumnIndexIn]
 
-        firebase.moveTask(task)
+        firebase.updateTask(task)
 
         const el = functionsOf[0][dragItem.current.id]
         let newList = functionsOf[0].filter(item => item !==el)

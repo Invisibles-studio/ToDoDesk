@@ -252,7 +252,7 @@ export class Firebase{
         })
     }
 
-    moveTask(data: Task){
+    updateTask(data: Task){
 
         let taskIndex = -1
 
