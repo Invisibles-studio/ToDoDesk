@@ -1,12 +1,11 @@
-import { getAuth, signInWithEmailAndPassword, User, createUserWithEmailAndPassword, deleteUser } from "firebase/auth";
-import { getDatabase, ref, set, get } from "firebase/database";
+import {createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, User} from "firebase/auth";
+import {get, getDatabase, onValue, ref, set} from "firebase/database";
 import {initializeApp} from "firebase/app";
-import { generateUniqueID } from "web-vitals/dist/modules/lib/generateUniqueID";
+import {generateUniqueID} from "web-vitals/dist/modules/lib/generateUniqueID";
 // @ts-ignore
-import { User as UserItem } from "../models/User.tsx";
+import {User as UserItem} from "../models/User.tsx";
 // @ts-ignore
 import {Task} from "../models/Task.tsx";
-import * as path from "path";
 
 
 const firebaseConfig = {
@@ -286,5 +285,103 @@ export class Firebase{
             }
         })
 
+    }
+
+    getAllProjects(callback: (object) => void){
+        let projects = []
+
+        get(ref(database, 'projects/')).then(snapshot => {
+            if (snapshot.exists()){
+                let value = snapshot.val()
+
+                let ids = Object.keys(value)
+
+                for (let i = 0; i<ids.length; i++) {
+                    let key = ids[i]
+
+                    let project = value[key]
+                    projects.push(project)
+                }
+
+                callback(projects)
+            }
+        })
+    }
+
+    updateProject(project){
+        set(ref(database, 'projects/'+project.id), project)
+    }
+
+    async getUserById(id: string){
+        let userSnapshot = await get(ref(database, 'users/'+id))
+
+        if (userSnapshot.exists()){
+            let value = userSnapshot.val()
+            return new UserItem(value)
+        }
+        else{
+            return null
+        }
+    }
+
+    callbackUpdateTasks(deskId: string, callback: (object) => void){
+        onValue(ref(database, 'projects/'+deskId+'/data'), snapshot => {
+            let data = {
+                commonList: [],
+                mediumList: [],
+                importantList: [],
+                veryImportantList: [],
+                doneList: [],
+                oneList: [],
+                repeatedList: []
+            }
+
+            let value = snapshot.val()
+
+            for (let i = 0; i<value.length; i++){
+                let obj = value[i]
+
+                if (obj.columnName === 'Обычные')
+                    data.commonList.push(obj)
+
+                if (obj.columnName === 'Средние')
+                    data.mediumList.push(obj)
+
+                if (obj.columnName === 'Важные')
+                    data.importantList.push(obj)
+
+                if (obj.columnName === 'Очень важные')
+                    data.veryImportantList.push(obj)
+
+                if (obj.columnName === 'Готовые')
+                    data.doneList.push(obj)
+
+                data.oneList.push(obj)
+
+                if (obj.repeat !== 0 && obj.finalDone){
+                    data.repeatedList.push(obj)
+                }
+
+            }
+
+            callback(data)
+        })
+    }
+
+    addToReport(task: Task){
+        let time = new Date()
+        let stringDate = time.getFullYear()+"-"+ ((time.getMonth()+1).toString().length === 1 ? '0'+(time.getMonth()+1) : time.getMonth()+1)
+        set(ref(database, '/reports/'+task.deskId+'/'+stringDate+'/'+time.getDate()+'/'+task.id), task)
+    }
+
+    async getReport(date: string, deskId: string){
+        let result = await get(ref(database, '/reports/'+deskId+'/'+date))
+
+        if (result.exists()){
+            return result.val()
+        }
+        else{
+            return null
+        }
     }
 }

@@ -11,15 +11,19 @@ import {User} from "../models/User.tsx"
 import {
     Alert,
     Autocomplete,
-    Button,
+    Button, Checkbox, colors,
     Dialog,
     DialogActions,
     DialogContent,
     DialogContentText,
-    DialogTitle, Snackbar, TextField
+    DialogTitle, ListItemText, Modal, OutlinedInput, Select, Snackbar, TextField
 } from "@mui/material";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
+import writeXlsxFile from "write-excel-file";
+import {DatePicker, LocalizationProvider} from "@mui/x-date-pickers";
+import dayjs from "dayjs";
+import {AdapterDayjs} from "@mui/x-date-pickers/AdapterDayjs";
 
 function sliceIntoChunks(arr, chunkSize) {
     const res = [];
@@ -59,6 +63,10 @@ export default function MainScreen() {
     let [showSnackbarError, setShowSnackbarError] = useState(false)
     let [showSetNameProject, setShowSetNameProject] = useState(false)
     let [projectName, setProjectName] = useState('')
+
+    let [allProjects, setAllProjects] = useState([])
+    let [downloadProjectSelected, setDownloadProjectSelected] = useState(null)
+    let [showDownloadReportModal, setShowDownloadReportModal] = useState(false)
 
     let style = {
         controlBlock: {
@@ -288,11 +296,57 @@ export default function MainScreen() {
     const ProjectItem = (object, index, admin = false) => {
         return (
             <div className={'Column MainScreenProjectBlock'} key={index}
-                 onClick={() => admin ? {} : navigation('/ToDoDesk/desk/' + object.id)}>
+                 onClick={() => admin ? openReportModal(object) : navigation('/ToDoDesk/desk/' + object.id)}>
                 <p style={style.projectBlockTitle}>{object.name}</p>
                 {admin && <img src={require('../images/download.png')} style={{width: 24, height: 24}}/>}
             </div>
         )
+    }
+
+    const openReportModal = (obj) => {
+        setDownloadProjectSelected(obj)
+        setShowDownloadReportModal(true)
+        //
+    }
+
+    const ReportModal = () => {
+        let [selectedDayDownloadReport, setSelectedDayDownloadReport] = useState(null)
+
+        let date = new Date()
+
+        let string = date.getFullYear()+'-'+(((date.getMonth()+1).toString().length > 1) ? (date.getMonth()+1).toString() : '0'+(date.getMonth()+1).toString())+'-'+date.getDate()
+        return <Modal
+            open={showDownloadReportModal}
+            onClose={() => setShowDownloadReportModal(false)}
+        >
+            <div style={{height: 190, width: 400, background: '#EAEAEA', position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', borderRadius: 10}}>
+                <Column>
+                    <span style={{textAlign: 'center', marginTop: 10}}>Выберите период для формирования отчета</span>
+                    <div style={{marginLeft: 30, marginTop: 20, flex: 1}}>
+                        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={'ru'}>
+                            <DatePicker
+                                views={['year', 'month']}
+                                label="Год и месяц"
+                                minDate={dayjs('2012-03-01')}
+                                maxDate={dayjs(string)}
+                                value={selectedDayDownloadReport}
+                                onChange={(newValue) => {
+                                    setSelectedDayDownloadReport(newValue)
+                                }}
+                                renderInput={(params) => <TextField {...params} helperText={null} />}
+                            />
+                        </LocalizationProvider>
+                    </div>
+                    <Button variant={"contained"} style={{marginTop: 20, marginLeft: 30, marginRight: 30}} onClick={() => {
+                        let newValue = selectedDayDownloadReport
+                        let month = ((newValue.$M+1).toString().length === 1) ? '0'+(newValue.$M+1).toString() : (newValue.$M+1).toString()
+                        let dateString = newValue.$y.toString() + '-' + month
+                        generateReportForExcel(dateString, downloadProjectSelected.id)
+                    }
+                    }>Скачать отчет</Button>
+                </Column>
+            </div>
+        </Modal>
     }
 
     const updateListProject = (projectsList) => {
@@ -330,10 +384,13 @@ export default function MainScreen() {
                 </Row>
                 <Row style={{alignItems: 'center'}}>
                     <img src={require('../images/external_link.png')}
-                         style={{width: 24, height: 24, marginRight: 5, cursor: 'pointer', visibility: myUserData.role !== usersRole[0] ? 'visible' : 'hidden'}}
+                         style={{width: 24, height: 24, marginRight: 5, cursor: 'pointer', visibility: myUserData.role !== usersRole[0] || user.id === myUserData.id ? 'visible' : 'hidden'}}
                          onClick={() => OpenAndCloseUserProfile(user)}/>
                     <p style={{...style.userItemSelectOrganization, fontSize: mobile ? 10 : 12, marginTop: 0, visibility: myUserData.role !== usersRole[0] ? 'visible' : 'hidden'}}
-                       onClick={OpenAndCloseSelectOrganization}>Выбрать организации</p>
+                       onClick={() => {
+                           setSelectedUser(user)
+                           OpenAndCloseSelectOrganization()
+                       }}>Выбрать организации</p>
                 </Row>
             </div>
         )
@@ -437,6 +494,9 @@ export default function MainScreen() {
         })
         let users = await firebase.getAllUsers()
         setUsers(users)
+        firebase.getAllProjects(projects => {
+            setAllProjects(projects)
+        })
     }
 
     const changeUserData = () => {
@@ -563,28 +623,31 @@ export default function MainScreen() {
                                      }
                                  }}
                 /></div>
-                <Autocomplete
-                    style={{...style.addUserBlockInput, marginBottom: 15, borderWidth: 0,}}
-                    disablePortal
-                    defaultValue={userProfileData.role}
-                    onChange={(event, newValue) => {
-                        updateAddUserFields()
-                        let text = newValue
-                        let user = userProfileData
-                        user.role = text
-                        setUserProfileData(user)
-                    }}
-                    options={usersRole}
-                    sx={{ width: 300 }}
-                    renderInput={(params) => <TextField {...params} label="Роль" onKeyDown={event => {
-                        if (event.key === 'Enter') {
-                            setOpenDialogSave(true)
-                            setChangeParametr(3)
-                            setSelectedUser(userProfileData.id)
+                {
+                    myUserData.role !== 'Сотрудник' &&
+                    <Autocomplete
+                        style={{...style.addUserBlockInput, marginBottom: 15, borderWidth: 0,}}
+                        disablePortal
+                        defaultValue={userProfileData.role}
+                        onChange={(event, newValue) => {
+                            updateAddUserFields()
+                            let text = newValue
+                            let user = userProfileData
+                            user.role = text
+                            setUserProfileData(user)
+                        }}
+                        options={usersRole}
+                        sx={{width: 300}}
+                        renderInput={(params) => <TextField {...params} label="Роль" onKeyDown={event => {
+                            if (event.key === 'Enter') {
+                                setOpenDialogSave(true)
+                                setChangeParametr(3)
+                                setSelectedUser(userProfileData.id)
+                            }
                         }
-                    }
-                    }/>}
-                />
+                        }/>}
+                    />
+                }
                 <div style={{
                     borderRadius: 2, borderStyle: 'solid', borderColor: Color.darkGreen,
                     borderWidth: 0.2, marginTop: 10
@@ -695,28 +758,31 @@ export default function MainScreen() {
                         /></div>
                     </Row>
                     <div style={{...style.userProfileBlockTexts, marginLeft: 51, flex: 1}}>
-                        <Autocomplete
-                            style={{...style.addUserBlockInput, marginBottom: 15, borderWidth: 0,}}
-                            disablePortal
-                            defaultValue={userProfileData.role}
-                            onChange={(event, newValue) => {
-                                updateAddUserFields()
-                                let text = newValue
-                                let user = userProfileData
-                                user.role = text
-                                setUserProfileData(user)
-                            }}
-                            options={usersRole}
-                            sx={{ width: 300 }}
-                            renderInput={(params) => <TextField {...params} label="Роль" onKeyDown={event => {
-                                if (event.key === 'Enter') {
-                                    setOpenDialogSave(true)
-                                    setChangeParametr(3)
-                                    setSelectedUser(userProfileData.id)
+                        {
+                            myUserData.role !== 'Сотрудник' &&
+                            <Autocomplete
+                                style={{...style.addUserBlockInput, marginBottom: 15, borderWidth: 0,}}
+                                disablePortal
+                                defaultValue={userProfileData.role}
+                                onChange={(event, newValue) => {
+                                    updateAddUserFields()
+                                    let text = newValue
+                                    let user = userProfileData
+                                    user.role = text
+                                    setUserProfileData(user)
+                                }}
+                                options={usersRole}
+                                sx={{width: 300}}
+                                renderInput={(params) => <TextField {...params} label="Роль" onKeyDown={event => {
+                                    if (event.key === 'Enter') {
+                                        setOpenDialogSave(true)
+                                        setChangeParametr(3)
+                                        setSelectedUser(userProfileData.id)
+                                    }
                                 }
-                            }
-                            }/>}
-                        />
+                                }/>}
+                            />
+                        }
                     </div>
                     <div style={{
                         borderRadius: 2, borderStyle: 'solid', borderColor: Color.darkGreen,
@@ -791,10 +857,113 @@ export default function MainScreen() {
         </Column>
     }
 
+    const generateReportForExcel = async (date, deskId) => {
+        let data = await firebase.getReport(date, deskId)
+
+        let maxProjects = 0
+
+        const csvData = []
+
+        const HEADER_ROW = [
+            {
+                value: 'Номер ряда',
+                fontWeight: 'bold',
+                align: 'center',
+                alignVertical: 'center'
+            },
+            {
+                value: 'Дата',
+                fontWeight: 'bold',
+                align: 'center',
+                alignVertical: 'center'
+            },
+        ]
+
+        csvData.push(HEADER_ROW)
+
+        let dates = Object.keys(data)
+
+        for (let i = 0; i < dates.length; i++) {
+
+            let key = dates[i]
+            let obj = data[key]
+
+            let csvLine = []
+
+            csvLine.push({
+                type: Number,
+                value: (i+1),
+                height: 100,
+                align: 'center',
+                alignVertical: 'center'
+            })
+
+            csvLine.push({
+                type: String,
+                value: date+'-'+key,
+                height: 100,
+                align: 'center',
+                alignVertical: 'center'
+            })
+
+            let projectIds = Object.keys(obj)
+
+            if (projectIds.length > maxProjects){
+                maxProjects = projectIds.length
+            }
+
+            for (let j = 0; j < projectIds.length; j++) {
+
+                let projectId = projectIds[j]
+                let project = obj[projectId]
+
+                let string = ''
+
+                string += 'Задание: '+project.name+'\n'
+                string += 'Описание: '+project.description+'\n'
+
+                let user = await firebase.getUserById(project.executor)
+                string += 'Выполняющий: '+user.firstname+' '+user.lastname+' '+user.username+' '+user.mail+' '+user.role
+
+                csvLine.push({
+                    type: String,
+                    value: string,
+                    height: 100,
+                    width: 600,
+                    wrap: true,
+                    align: 'left',
+                    alignVertical: 'center'
+                })
+            }
+
+            csvData.push(csvLine)
+        }
+
+        let columns = [ {width: 14}, {width: 14}, ]
+
+        for (let i = 0; i < maxProjects; i++) {
+            columns.push({width: 75})
+        }
+
+        const buffer = await writeXlsxFile(csvData, { columns: columns, buffer: true,  })
+
+        let file = new Blob([buffer], {
+            type: ''
+        })
+
+        let csvUrl = window.URL.createObjectURL(file)
+        let tempLink = document.createElement('a')
+        tempLink.href = csvUrl
+        tempLink.setAttribute('download', 'report-'+date+'-'+deskId+'.xlsx')
+        tempLink.click()
+
+    }
+
     init()
 
     let mobile = window.innerWidth < 800 && window.innerWidth > 200
     let width = window.innerWidth
+
 
     return (
         <div className={'MainBackground Column'}>
@@ -910,13 +1079,36 @@ export default function MainScreen() {
                         borderWidth: 0.2, marginLeft: 7, marginRight: 7
                     }}/>
                     <Row>
-                        <p style={style.selectOrganizationMessage}>anoiby принадлежит к следующим организациям:</p>
-                        <img src={require('../images/cooliconGreen.png')} style={{
-                            width: 14, height: 14, marginRight: 15, marginTop: 5, cursor: 'pointer'
-                        }}/>
+                        <p style={style.selectOrganizationMessage}>{selectedUser.username} принадлежит к следующим организациям:</p>
                     </Row>
                     <Column>
-                        <p style={style.selectOrganizationItem}>Test</p>
+                        {allProjects.map((project, i) => {
+                            return <Row style={{alignItems: 'center'}}>
+                                <Checkbox checked={project.usersInProject.includes(selectedUser.id)} onChange={(e) => {
+                                    let checked = e.target.checked
+
+                                    let value = project
+
+                                    if (checked){
+                                        if (value.usersInProject.includes(selectedUser.id)) return
+                                        value.usersInProject.push(selectedUser.id)
+                                    }
+                                    else{
+                                        let list = value.usersInProject.filter(user => user !== selectedUser.id)
+                                        value.usersInProject = list;
+                                    }
+
+                                    firebase.updateProject(value)
+                                    setAllProjects((val) => {
+                                        let list = val.filter(proj => proj.id !== value.id)
+                                        list.push(value)
+                                        return list
+                                    })
+                                }
+                                }/>
+                                <span>{project.name}</span>
+                            </Row>
+                        })}
                     </Column>
                 </Column>
             </Column>
@@ -976,6 +1168,8 @@ export default function MainScreen() {
                     }}>Создать</Button>
                 </DialogActions>
             </Dialog>
+
+            <ReportModal/>
         </div>
     )
 }

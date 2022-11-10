@@ -27,3 +27,11 @@ export function Column({children, style = {}, onClick = () => {}, key = '', id='
     )
 }
 
+export function CheckAdmin(user){
+
+    let adminsRoles = ['Администратор', 'СуперАдминистратор']
+
+    return adminsRoles.includes(user.role)
+
+}
+

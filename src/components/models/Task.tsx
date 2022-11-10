@@ -5,7 +5,10 @@ interface TaskEntry {
     description: string,
     repeat: number,
     comments: [],
-    id: string
+    id: string,
+    executor: string,
+    finalDone: boolean,
+    doneTime: number
 }
 
 export class Task{
@@ -16,6 +19,9 @@ export class Task{
     repeat: number
     comments: []
     id: string
+    executor: string
+    finalDone: boolean
+    doneTime: number
 
 
     constructor(data: TaskEntry) {

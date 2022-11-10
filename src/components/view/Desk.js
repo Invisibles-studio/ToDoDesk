@@ -1,12 +1,21 @@
 import React, {useRef, useState} from "react";
-import {Column, DraggableRow, Row} from "../elements/Utils";
+import {CheckAdmin, Column, DraggableRow, Row} from "../elements/Utils";
 import {useParams} from "react-router-dom";
 import Header from "../elements/Header";
 import NavBar from "../elements/NavBar";
 import {Color} from "../utils/Constants";
 import {User} from "../models/User.tsx";
 import {Firebase} from "../utils/Firebase.tsx";
-import {Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField} from "@mui/material";
+import {
+    Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
+    Modal,
+    TextField
+} from "@mui/material";
 import {Task} from "../models/Task.tsx";
 import { generateUniqueID } from "web-vitals/dist/modules/lib/generateUniqueID";
 import {Col, Image} from "react-bootstrap";
@@ -146,8 +155,10 @@ export default function Desk(){
             outline: 'none',
             height: 61,
             width: 270,
-            maxWidth: 372,
-            minWidth: 200,
+            maxWidth: 270,
+            minWidth: 270,
+            minHeight: 61,
+            maxHeight: 300,
             background: Color.whiteCoffee,
             borderRadius: 5,
             borderWidth: 1,
@@ -274,6 +285,8 @@ export default function Desk(){
     let [taskDescription, setTaskDescription] = useState('')
     let [taskComment, setTaskComment] = useState('')
 
+    let [dataOfUserExecutorTask, setDataOfUserExecutorTask] = useState(false)
+
     let stateLists = [
         [commonList, setCommonList, commonHeight, setCommonHeight],
         [mediumList, setMediumList, mediumHeight, setMediumHeight],
@@ -293,7 +306,13 @@ export default function Desk(){
         firebase.getUserData(firebase.getMyUserUid(), (data) => {
             setMyUserData(new User(data))
         })
-        firebase.getTaskInProject(deskId, (tasks) => {
+        firebase.callbackUpdateTasks(deskId, (tasks) => {
+            setCommonHeight(99)
+            setMediumHeight(99)
+            setImportantHeight(99)
+            setVeryImportantHeight(99)
+            setDoneHeight(99)
+
             setCommonList(tasks.commonList)
             setCommonHeight(value => value+(31*tasks.commonList.length))
             setMediumList(tasks.mediumList)
@@ -304,7 +323,70 @@ export default function Desk(){
             setVeryImportantHeight(value => value+(31*tasks.veryImportantList.length))
             setDoneList(tasks.doneList)
             setDoneHeight(value => value+(31*tasks.doneList.length))
+
+            updateSelectedTask(tasks.oneList)
+
+            updateRepeatedTasks(tasks.repeatedList)
         })
+    }
+
+    const updateRepeatedTasks = (list) => {
+
+        for (let i = 0; i < list.length; i++) {
+
+            let task = list[i]
+
+            let time = task.doneTime
+            let now = new Date().getTime()
+
+            time /= 1000
+            now /= 1000
+
+            let diff = now - time
+
+            if (task.repeat === 1){
+                if (diff >= 86400){
+                    task.finalDone = false
+                    task.columnName = 'Обычные'
+                    firebase.updateTask(task)
+                }
+            }
+
+            if (task.repeat === 2){
+                if (diff >= 604800){
+                    task.finalDone = false
+                    task.columnName = 'Обычные'
+                    firebase.updateTask(task)
+                }
+            }
+
+            if (task.repeat === 3){
+                if (diff >= 2592000){
+                    task.finalDone = false
+                    task.columnName = 'Обычные'
+                    firebase.updateTask(task)
+                }
+            }
+
+        }
+
+    }
+
+    const updateSelectedTask = async (list) => {
+        let selectedTaskId = document.getElementById('selectedTaskId').value
+
+        if (selectedTaskId !== 1){
+
+            for (let i = 0; i <list.length; i++) {
+                let task = list[i]
+
+                if (task.id === selectedTaskId){
+                    await setSelectedTask(task)
+                    await setTaskDescription(task.description)
+                    break
+                }
+            }
+        }
     }
 
     const dragStart = (e, columnName, position) => {
@@ -339,6 +421,11 @@ export default function Desk(){
         const columnName = dropItem.current.columnName
 
         const elementColumnIndexOf = dataToDoList.indexOf(dragItem.current.columnName)
+
+        if (dragItem.current.columnName === 'Готовые' && !CheckAdmin(myUserData)){
+            return;
+        }
+
         const elementColumnIndexIn = dataToDoList.indexOf(dropItem.current.columnName)
 
         let functionsOf = stateLists[elementColumnIndexOf]
@@ -347,6 +434,10 @@ export default function Desk(){
         let task = selectedTask
 
         task.columnName = dataToDoList[elementColumnIndexIn]
+
+        if (dragItem.current.columnName === 'Готовые'){
+            task.finalDone = false
+        }
 
         firebase.updateTask(task)
 
@@ -371,7 +462,10 @@ export default function Desk(){
             deskId: deskId,
             repeat: 0,
             comments: [],
-            id: generateUniqueID()
+            id: generateUniqueID(),
+            executor: '',
+            finalDone: false,
+            doneTime: 0
         })
 
         stateLists[columnIndex][3](value => value+31)
@@ -449,6 +543,48 @@ export default function Desk(){
             setReceptionBlock('hidden')
     }
 
+    const DataOfUserExecutorTask = () => {
+
+        let [userExecutor, setUserExecutor] = useState({
+            mail: '<Идет загрузка данных>'
+        })
+
+        firebase.getUserById(selectedTask.executor).then((user) => {
+            if (user === null){
+                setUserExecutor({
+                    mail: '<Ошибка не корректный пользователь>'
+                })
+            }
+            else{
+                setUserExecutor(user)
+            }
+        })
+
+        return <Modal
+            open={dataOfUserExecutorTask}
+            onClose={() => setDataOfUserExecutorTask(false)}
+        >
+                <div style={{height: 250, width: 400, background: '#EAEAEA', position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', borderRadius: 10}}>
+
+                    <Column style={{flexWrap: 'wrap', display: 'flex'}}>
+                        <span style={{marginTop: 10, marginLeft: 10, marginRight: 10, textAlign: 'center'}}>Над заданием ведет работу сотрудник с почтой: {userExecutor.mail}</span>
+                        <span style={{marginTop: 10, marginLeft: 20, marginRight: 10}}>Имя: {userExecutor.firstname}</span>
+                        <span style={{marginTop: 10, marginLeft: 20, marginRight: 10}}>Фамилия: {userExecutor.lastname}</span>
+                        <span style={{marginTop: 10, marginLeft: 20, marginRight: 10}}>Имя пользователя: {userExecutor.username}</span>
+                        <Button style={{height: 40, marginRight: 30, marginLeft: 30, marginTop: 40}} variant={"contained"} onClick={() => {
+                            let task = selectedTask
+                            task.executor = ''
+                            firebase.updateTask(task)
+                            setSelectedTask(task)
+                            setDataOfUserExecutorTask(false)
+                        }
+                        }>Отменить выполнение задания</Button>
+                    </Column>
+
+                </div>
+        </Modal>
+    }
+
     let mobile = window.innerWidth > 200 && window.innerWidth < 800;
 
     init()
@@ -460,8 +596,10 @@ export default function Desk(){
                 <ToDoLists/>
             </Row>
 
+            <DataOfUserExecutorTask/>
 
             <Column style={{...style.menuBlockAll, visibility: menuBlock}}>
+                <input type={'hidden'} value={selectedTask.id} id={'selectedTaskId'}/>
                 <div className={'Column DeskMenuBlock'}>
                     <Row style={{marginTop: 21, justifyContent: 'space-between'}}>
                         <Row>
@@ -481,7 +619,14 @@ export default function Desk(){
                     <Row style={{justifyContent: 'flex-end'}}>
                         <Row style={style.menuBlockActionButton} onClick={() => OpenAndCloseReceptionBlock()}>
                             <img src={require('../images/clock.png')} style={{width: 20, height: 20, marginLeft: 10}}/>
-                            <p style={style.menuBlockActionButtonText}>Повторение</p>
+                            <p style={style.menuBlockActionButtonText}>{
+                                selectedTask.repeat === 0 ?
+                                    'Повторение' :
+                                selectedTask.repeat === 1 ?
+                                    'Один раз в день' :
+                                selectedTask.repeat === 2 ?
+                                    'Один раз в неделю' : 'Один раз в месяц'
+                            }</p>
                         </Row>
                     </Row>
                     <Row style={{justifyContent: 'space-between'}}>
@@ -489,14 +634,60 @@ export default function Desk(){
                             <img src={require('../images/hamburger.png')} style={{width: 30, height: 30}}/>
                             <p style={style.menuBlockDescriptionTitle}>Описание</p>
                         </Row>
-                        <Row style={{...style.menuBlockActionButton, marginTop: 10}}>
+                        <Row style={{...style.menuBlockActionButton, marginTop: 10}} onClick={ async () => {
+                            if (selectedTask.executor === undefined || selectedTask.executor === ''){
+                                let task = selectedTask
+                                task.executor = myUserData.id
+                                firebase.updateTask(task)
+                                await setSelectedTask(task)
+                                await setTaskComment(' ')
+                                await setTaskComment('')
+                            }
+                            else{
+
+                                if (selectedTask.executor === myUserData.id){
+                                    let task = selectedTask
+                                    task.executor = ''
+                                    firebase.updateTask(task)
+                                    await setSelectedTask(task)
+                                    await setTaskComment(' ')
+                                    await setTaskComment('')
+                                }
+                                else{
+                                    setDataOfUserExecutorTask(true)
+                                }
+
+                            }
+                        }}>
                             <img src={require('../images/transfer.png')} style={{width: 20, height: 20, marginLeft: 10}}/>
-                            <p style={{...style.menuBlockActionButtonText, marginRight: 34}}>Сменить исполнителя</p>
+                            <p style={{...style.menuBlockActionButtonText, marginRight: 34}}>{
+                                selectedTask.executor === undefined || selectedTask.executor === '' ?
+                                    'Выполнить' :
+                                    selectedTask.executor === myUserData.id ?
+                                        'Отменить' : 'Подробнее об исполнителе'
+                            }</p>
                         </Row>
                     </Row>
-                    <Row style={{marginLeft: mobile? 64: 94}}>
+                    <Row style={{marginLeft: mobile? 64: 94, justifyContent: 'space-between'}}>
                         <textarea style={style.menuBlockDescriptionBlock} placeholder={'Добавьте более детальное описание...'}
                                   onChange={(e) => setTaskDescription(e.target.value)} value={taskDescription}/>
+                        {
+                            selectedTask.columnName === 'Готовые' && CheckAdmin(myUserData) &&
+
+                            <Row style={{...style.menuBlockActionButton, marginTop: 10}} onClick={ async () => {
+                                if (!selectedTask.finalDone){
+                                    let task = selectedTask
+                                    task.finalDone = true
+                                    task.doneTime = new Date().getTime()
+                                    firebase.updateTask(task)
+                                    firebase.addToReport(task)
+                                    setSelectedTask(task)
+                                }
+
+                            }}>
+                                <span style={{...style.menuBlockActionButtonText}}>{!selectedTask.finalDone ? 'Подтвердить выполнение' : 'Задание выполнено'}</span>
+                            </Row>
+                        }
                     </Row>
                     <Row style={{marginLeft: mobile? 64: 94, marginTop: 10}}>
                         <input style={style.menuBlockDescriptionButton} type={'submit'} value={"Сохранить"}
@@ -543,6 +734,7 @@ export default function Desk(){
                     </Row>
                     <Column style={{
                         overflowY: 'scroll',
+                        scrollbarWidth: 'none',
                         height: selectedTask.comments !== undefined &&
                         selectedTask.comments.length < 6 ? selectedTask.comments.length*60 :
                             selectedTask.comments === undefined ? 0 : 300
@@ -580,6 +772,13 @@ export default function Desk(){
                                 <img src={require('../images/close_big.png')} style={{width: 14, height: 14, cursor: 'pointer', marginRight: 8}}
                                      onClick={() => OpenAndCloseReceptionBlock()}/>
                             </Row>
+                            <input type={'submit'} value={'Без повторений'} style={{...style.menuBlockReceptionBlockButton}}
+                                   onClick={() => {
+                                       let task = selectedTask
+                                       task.repeat = 0
+                                       firebase.updateTask(task)
+                                       setSelectedTask(task)
+                                   }}/>
                             <input type={'submit'} value={'Один раз в день'} style={style.menuBlockReceptionBlockButton}
                                    onClick={() => {
                                        let task = selectedTask
@@ -617,6 +816,7 @@ export default function Desk(){
                         type="email"
                         fullWidth
                         variant="standard"
+                        inputProps={{ maxLength: 18 }}
                         onChange={(event) => {
                             setNameTask(event.target.value)
                         }}
