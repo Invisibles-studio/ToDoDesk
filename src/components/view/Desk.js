@@ -629,6 +629,24 @@ export default function Desk(){
                             }</p>
                         </Row>
                     </Row>
+                    {
+                        mobile &&
+                        <Row style={{justifyContent: 'flex-end'}}>
+                            <Row style={{...style.menuBlockActionButton, marginTop: 10}} onClick={ async () => {
+                                if (!selectedTask.finalDone){
+                                    let task = selectedTask
+                                    task.finalDone = true
+                                    task.doneTime = new Date().getTime()
+                                    firebase.updateTask(task)
+                                    firebase.addToReport(task)
+                                    setSelectedTask(task)
+                                }
+
+                            }}>
+                                <span style={{...style.menuBlockActionButtonText}}>{!selectedTask.finalDone ? 'Подтвердить выполнение' : 'Задание выполнено'}</span>
+                            </Row>
+                        </Row>
+                    }
                     <Row style={{justifyContent: 'space-between'}}>
                         <Row style={{marginTop: mobile? 40:6, marginLeft: mobile? 10:38}}>
                             <img src={require('../images/hamburger.png')} style={{width: 30, height: 30}}/>
@@ -672,7 +690,7 @@ export default function Desk(){
                         <textarea style={style.menuBlockDescriptionBlock} placeholder={'Добавьте более детальное описание...'}
                                   onChange={(e) => setTaskDescription(e.target.value)} value={taskDescription}/>
                         {
-                            selectedTask.columnName === 'Готовые' && CheckAdmin(myUserData) &&
+                            selectedTask.columnName === 'Готовые' && CheckAdmin(myUserData) && !mobile &&
 
                             <Row style={{...style.menuBlockActionButton, marginTop: 10}} onClick={ async () => {
                                 if (!selectedTask.finalDone){
@@ -707,7 +725,16 @@ export default function Desk(){
                         <p style={style.menuBlockCommentsTitle}>Коментарии</p>
                     </Row>
                     <Row style={{marginLeft: mobile? 10: 35, marginTop: 24, alignItems: 'center', marginRight: mobile? 20: 0, marginBottom: mobile? 0: 20}}>
-                        <div style={style.avatar}><p style={style.avatarText}>{GetUserName().slice(0,1)}</p></div>
+                        <div style={!mobile ? style.avatar : {
+                            marginRight: 8,
+                            height: 30,
+                            width: 30,
+                            background: Color.darkBlue,
+                            borderRadius: 20,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}><p style={style.avatarText}>{GetUserName().slice(0,1)}</p></div>
                         <input style={style.menuBlockCommentsInput} type={"text"} placeholder={'Напишите коментарий...'}
                                value={taskComment}
                                onChange={(e) => setTaskComment(e.target.value)}
@@ -740,8 +767,17 @@ export default function Desk(){
                             selectedTask.comments === undefined ? 0 : 300
                     }}>
                         {selectedTask.comments !== undefined && selectedTask.comments.map((comment, i) => {
-                            return <Row style={{marginLeft: mobile? 10: 35, alignItems: 'center', marginRight: mobile? 20: 0, marginBottom: mobile? 0: 20}}>
-                                <div style={style.avatar}><p style={style.avatarText}>{comment.username.slice(0,1)}</p></div>
+                            return <Row style={{marginLeft: mobile? 10: 35, alignItems: 'center', marginRight: mobile? 20: 0, marginBottom: mobile? 0: 20, marginTop:mobile? 20 : 0}}>
+                                <div style={!mobile ? style.avatar : {
+                                    marginRight: 8,
+                                    height: 30,
+                                    width: 30,
+                                    background: Color.darkBlue,
+                                    borderRadius: 20,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}><p style={style.avatarText}>{comment.username.slice(0,1)}</p></div>
                                 <div style={{...style.menuBlockCommentsInput, alignItems: 'center', display: 'flex'}}>
                                     <span style={{marginLeft: 20}}>{comment.text}</span>
                                 </div>

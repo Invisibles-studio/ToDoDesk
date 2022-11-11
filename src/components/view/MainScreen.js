@@ -67,6 +67,9 @@ export default function MainScreen() {
     let [allProjects, setAllProjects] = useState([])
     let [downloadProjectSelected, setDownloadProjectSelected] = useState(null)
     let [showDownloadReportModal, setShowDownloadReportModal] = useState(false)
+    let [showChangePasswordModal, setShowChangePasswordModal] = useState(false)
+    let [showSnackbarSuccess, setShowSnackbarSuccess] = useState(false)
+    let [showUserTasksModal, setShowUserTasksModal] = useState(false)
 
     let style = {
         controlBlock: {
@@ -338,6 +341,10 @@ export default function MainScreen() {
                         </LocalizationProvider>
                     </div>
                     <Button variant={"contained"} style={{marginTop: 20, marginLeft: 30, marginRight: 30}} onClick={() => {
+                        if (selectedDayDownloadReport === null) {
+                            setShowSnackbarError(true)
+                            return
+                        }
                         let newValue = selectedDayDownloadReport
                         let month = ((newValue.$M+1).toString().length === 1) ? '0'+(newValue.$M+1).toString() : (newValue.$M+1).toString()
                         let dateString = newValue.$y.toString() + '-' + month
@@ -652,21 +659,17 @@ export default function MainScreen() {
                     borderRadius: 2, borderStyle: 'solid', borderColor: Color.darkGreen,
                     borderWidth: 0.2, marginTop: 10
                 }}/>
-                <div style={style.userProfileBlockCurrentTask}>
-                    <p style={style.userProfileBlockCurrentTaskText}>Текущее задание</p>
+                <div style={style.userProfileBlockCurrentTask} onClick={() =>  setShowUserTasksModal(true)}>
+                    <p style={style.userProfileBlockCurrentTaskText}>Текущие задания</p>
                 </div>
-                <Row style={{marginTop: 14}}>
-                    <div style={{...style.userProfileBlockDarkButtons, marginLeft: mobile ? 10 : 64}}>
-                        <p style={style.userProfileBlockDarkButtonsText}>Поменять пароль</p>
-                    </div>
-                    <div style={{
-                        ...style.userProfileBlockDarkButtons,
-                        marginLeft: mobile ? 5 : 24,
-                        marginRight: mobile ? 10 : 0
-                    }}>
-                        <p style={style.userProfileBlockDarkButtonsText}>Поменять выбранные задания</p>
-                    </div>
-                </Row>
+                {
+                    userProfileData.id === myUserData.id &&
+                    <Row style={{marginTop: 14}}>
+                        <div style={{...style.userProfileBlockDarkButtons, marginLeft: 10, flex: 1, marginRight: 10}} onClick={() => setShowChangePasswordModal(true)}>
+                            <p style={style.userProfileBlockDarkButtonsText}>Поменять пароль</p>
+                        </div>
+                    </Row>
+                }
                 <Row style={{justifyContent: 'center', marginTop: 58, marginBottom: 20}}>
                     <Calendar/>
                 </Row>
@@ -788,21 +791,17 @@ export default function MainScreen() {
                         borderRadius: 2, borderStyle: 'solid', borderColor: Color.darkGreen,
                         borderWidth: 0.2, marginLeft: 43, marginRight: 25
                     }}/>
-                    <div style={style.userProfileBlockCurrentTask}>
-                        <p style={style.userProfileBlockCurrentTaskText}>Текущее задание</p>
+                    <div style={style.userProfileBlockCurrentTask} onClick={() =>  setShowUserTasksModal(true)}>
+                        <p style={style.userProfileBlockCurrentTaskText}>Текущие задания</p>
                     </div>
-                    <Row style={{marginTop: 14}}>
-                        <div style={{...style.userProfileBlockDarkButtons, marginLeft: mobile ? 10 : 64}}>
-                            <p style={style.userProfileBlockDarkButtonsText}>Поменять пароль</p>
-                        </div>
-                        <div style={{
-                            ...style.userProfileBlockDarkButtons,
-                            marginLeft: mobile ? 5 : 24,
-                            marginRight: mobile ? 10 : 0
-                        }}>
-                            <p style={style.userProfileBlockDarkButtonsText}>Поменять выбранные задания</p>
-                        </div>
-                    </Row>
+                    {
+                        userProfileData.id === myUserData.id &&
+                        <Row style={{marginTop: 14}}>
+                            <div style={{...style.userProfileBlockDarkButtons, marginLeft: 64, flex: 1, marginRight: 64}} onClick={() => setShowChangePasswordModal(true)}>
+                                <p style={style.userProfileBlockDarkButtonsText}>Поменять пароль</p>
+                            </div>
+                        </Row>
+                    }
                     <Row style={{justifyContent: 'center', marginTop: 58, marginBottom: 20}}>
                         <Calendar/>
                     </Row>
@@ -859,6 +858,11 @@ export default function MainScreen() {
 
     const generateReportForExcel = async (date, deskId) => {
         let data = await firebase.getReport(date, deskId)
+
+        if (data === undefined || data === null) {
+            setShowSnackbarError(true)
+            return
+        }
 
         let maxProjects = 0
 
@@ -957,6 +961,37 @@ export default function MainScreen() {
         tempLink.setAttribute('download', 'report-'+date+'-'+deskId+'.xlsx')
         tempLink.click()
 
+    }
+
+    const UserTasksModal = () => {
+
+        let [userTasks, setUserTasks] = useState([])
+
+        firebase.getUserTasks(userProfileData.id, (tasks) => setUserTasks(tasks))
+
+        return <Modal
+            open={showUserTasksModal}
+            onClose={() => setShowUserTasksModal(false)}
+        >
+            <div style={{minWidth: 300, minHeight: 200, background: '#EAEAEA', position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', borderRadius: 10}}>
+                <Column>
+                    <span style={{marginTop: 10, marginRight: 30, marginLeft: 30, fontSize: 16, fontWeight: '500'}}>Просмотр выбранных проектов пользователя: {userProfileData.name}</span>
+                    <Column style={{marginLeft: 30, marginRight: 30, marginTop: 10, marginBottom: 10}}>
+                        {
+                            userTasks.map((task, i) => {
+                                return <Row key={task.id}>
+                                    <span>{task.name}</span>
+                                </Row>
+                            })
+                        }
+                        {
+                            userTasks.length === 0 &&
+                            <span style={{textAlign: 'center'}}>У пользователя нет выбранных заданий</span>
+                        }
+                    </Column>
+                </Column>
+            </div>
+        </Modal>
     }
 
     init()
@@ -1142,6 +1177,12 @@ export default function MainScreen() {
                 </Alert>
             </Snackbar>
 
+            <Snackbar open={showSnackbarSuccess} autoHideDuration={6000} onClose={() => setShowSnackbarSuccess(false)}>
+                <Alert onClose={() => setShowSnackbarSuccess(false)} severity="success" sx={{ width: '100%' }}>
+                    Пароль успешно изменен!
+                </Alert>
+            </Snackbar>
+
             <Dialog open={showSetNameProject} onClose={() => setShowSetNameProject(false)}>
                 <DialogTitle>Создание организации</DialogTitle>
                 <DialogContent>
@@ -1169,7 +1210,45 @@ export default function MainScreen() {
                 </DialogActions>
             </Dialog>
 
+            <Dialog open={showChangePasswordModal} onClose={() => setShowChangePasswordModal(false)}>
+                <DialogTitle>Смена пароля</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Введите новый пароль
+                    </DialogContentText>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="Пароль"
+                        type="text"
+                        fullWidth
+                        variant="standard"
+                        onChange={(event) => {
+                            setProjectName(event.target.value)
+                        }}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setShowChangePasswordModal(false)}>Отмена</Button>
+                    <Button onClick={() => {
+                        setShowChangePasswordModal(false)
+                        let password = projectName
+                        firebase.changePassword(password,
+                            () => {
+                            setShowSnackbarError(true)
+                        },
+                            () => {
+                                setShowSnackbarSuccess(true)
+                            }
+                            )
+                        setProjectName('')
+                    }}>Поменять</Button>
+                </DialogActions>
+            </Dialog>
+
             <ReportModal/>
+
+            <UserTasksModal/>
         </div>
     )
 }

@@ -1,4 +1,4 @@
-import {createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, User} from "firebase/auth";
+import {createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, User, updatePassword, EmailAuthProvider, reauthenticateWithPopup} from "firebase/auth";
 import {get, getDatabase, onValue, ref, set} from "firebase/database";
 import {initializeApp} from "firebase/app";
 import {generateUniqueID} from "web-vitals/dist/modules/lib/generateUniqueID";
@@ -6,17 +6,18 @@ import {generateUniqueID} from "web-vitals/dist/modules/lib/generateUniqueID";
 import {User as UserItem} from "../models/User.tsx";
 // @ts-ignore
 import {Task} from "../models/Task.tsx";
+import firebase from "firebase/compat";
 
 
 const firebaseConfig = {
-    apiKey: "AIzaSyBgmSXmTRp20MawSUcINaNypQbteZHbIzM",
-    authDomain: "tododesk-6160f.firebaseapp.com",
-    projectId: "tododesk-6160f",
-    storageBucket: "tododesk-6160f.appspot.com",
-    messagingSenderId: "28221150821",
-    appId: "1:28221150821:web:5c3acc1cc69f8fa20f188c",
-    credential: true
+    apiKey: "AIzaSyCOs-o_jKQB9nuim79YvsTUdmRUVdetzeA",
+    authDomain: "tododesk2.firebaseapp.com",
+    projectId: "tododesk2",
+    storageBucket: "tododesk2.appspot.com",
+    messagingSenderId: "1011881441412",
+    appId: "1:1011881441412:web:8c22ee110a47bef3b52ad1"
 };
+
 
 
 const app = initializeApp(firebaseConfig);
@@ -29,7 +30,7 @@ export class Firebase{
 
     createUser(data: UserItem, password: string){
         createUserWithEmailAndPassword(auth, data.mail, password).then(async value => {
-            let exists = await this.checkIfUserExist(value.user.uid)
+            let exists = await this.checkIfUserExist(value.user)
             if (!exists){
                 data.id = value.user.uid
                 this.createUserInDatabase(value.user.uid, data)
@@ -108,17 +109,18 @@ export class Firebase{
         }
     }
 
-    async checkIfUserExist(uid: string, create: boolean = false){
+    async checkIfUserExist(user: User, create: boolean = false){
+        let uid = user.uid
         let result = await get(ref(database, 'users/'+uid))
 
         if (create){
             if (!result.exists()){
-                this.createUserInDatabase(uid, {
+                this.createUserInDatabase(user.uid, {
                     firstname: 'default',
                     lastname: 'default',
-                    mail: '',
+                    mail: user.email,
                     username: generateUniqueID(),
-                    role: '',
+                    role: 'Сотрудник',
                     id: uid
                 })
             }
@@ -134,7 +136,7 @@ export class Firebase{
         signInWithEmailAndPassword(auth, email, password)
             .then( value => {
                 Firebase.user = value.user
-                this.checkIfUserExist(value.user.uid)
+                this.checkIfUserExist(value.user, true)
                 localStorage.setItem('userUid', value.user.uid)
                 console.log('Login successful!')
                 callback()
@@ -383,5 +385,67 @@ export class Firebase{
         else{
             return null
         }
+    }
+
+    changePassword(newPassword: string, callbackError: () => void, callbackSuccessful: () => void){
+        let user = auth.currentUser
+        updatePassword(user, newPassword).then(() => {
+            // Update successful.
+        }).catch((error) => {
+            callbackError()
+        });
+    }
+
+    getUserTasks(uid: string, callback: (object) => void){
+        let myProjects = []
+        let myTasks = []
+
+        get(ref(database, 'projects')).then(snapshot => {
+            if (snapshot.exists()){
+                let value = snapshot.val()
+                let ids = Object.keys(value)
+
+                for (let i = 0; i<ids.length; i++){
+                    let key = ids[i]
+
+                    let project = value[key]
+
+                    let usersInProject = project.usersInProject
+
+                    for (let j = 0; j<usersInProject.length; j++){
+                        let uidProject = usersInProject[j]
+
+                        if (uid === uidProject){
+                            myProjects.push(project)
+                        }
+                    }
+                }
+
+                for (let i = 0; i < myProjects.length; i++) {
+                    let project = myProjects[i]
+
+                    if (project.data !== undefined && project.data !== null){
+
+                        for (let j = 0; j < project.data.length; j++) {
+
+                            let task = new Task(project.data[j])
+
+                            if (task.executor === uid && !task.finalDone){
+                                myTasks.push(task)
+                            }
+
+
+                        }
+
+                    }
+                }
+
+                callback(myTasks)
+
+            }
+            else{
+                callback([])
+            }
+        })
     }
 }
