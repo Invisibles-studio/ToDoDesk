@@ -5,7 +5,8 @@ interface UserEntry {
     mail: string,
     username: string,
     role: string,
-    id: string
+    id: string,
+    createrId: string
 }
 
 export class User{

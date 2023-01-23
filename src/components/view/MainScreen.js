@@ -63,6 +63,9 @@ export default function MainScreen() {
     let [showSnackbarError, setShowSnackbarError] = useState(false)
     let [showSetNameProject, setShowSetNameProject] = useState(false)
     let [projectName, setProjectName] = useState('')
+    let [editProjectUid, setEditProjectUid] = useState('')
+    let [editProjectName, setEditProjectName] = useState('')
+    let [editProjectObj, setEditProjectObj] = useState(null)
 
     let [allProjects, setAllProjects] = useState([])
     let [downloadProjectSelected, setDownloadProjectSelected] = useState(null)
@@ -70,6 +73,7 @@ export default function MainScreen() {
     let [showChangePasswordModal, setShowChangePasswordModal] = useState(false)
     let [showSnackbarSuccess, setShowSnackbarSuccess] = useState(false)
     let [showUserTasksModal, setShowUserTasksModal] = useState(false)
+    let [showEditProjectModal, setShowEditProjectModal] = useState(false)
 
     let style = {
         controlBlock: {
@@ -297,11 +301,25 @@ export default function MainScreen() {
     }
 
     const ProjectItem = (object, index, admin = false) => {
+        let settings = false
+        let showSettings = myUserData.role === "СуперАдминистратор"
         return (
             <div className={'Column MainScreenProjectBlock'} key={index}
-                 onClick={() => admin ? openReportModal(object) : navigation('/ToDoDesk/desk/' + object.id)}>
+                 onClick={() => admin ? openReportModal(object) : settings ? null : navigation('/ToDoDesk/desk/' + object.id)}>
                 <p style={style.projectBlockTitle}>{object.name}</p>
                 {admin && <img src={require('../images/download.png')} style={{width: 24, height: 24}}/>}
+                {!admin && showSettings && <img src={require('../images/setting.png')} style={{width: 24, height: 24, filter: "invert(100%)", marginTop: 10}}
+                    onClick={() => {
+                        settings = true
+                        setEditProjectUid(object.id)
+                        setEditProjectObj(object)
+                        setShowEditProjectModal(true)
+                        setTimeout(() => {
+                            settings = false
+                        }, 500)
+                    }
+                    }
+                />}
             </div>
         )
     }
@@ -310,6 +328,54 @@ export default function MainScreen() {
         setDownloadProjectSelected(obj)
         setShowDownloadReportModal(true)
         //
+    }
+
+    const EditProject = () => {
+
+        let name = ''
+
+        return <Modal
+            open={showEditProjectModal}
+            onClose={() => setShowEditProjectModal(false)}
+        >
+            <div style={{height: 190, width: 400, background: '#EAEAEA', position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', borderRadius: 10}}>
+                <p style={{margin: 0, marginLeft: 20, marginTop: 5}}>Введите новое имя</p>
+                <div>
+                    <input style={{marginTop: 10, marginBottom: 10, marginLeft: 20, borderWidth: 0, outline: 'none', fontWeight: '700', fontSize: 30, color: Color.darkGreen,}}
+                           defaultValue={editProjectObj === null ? '' : editProjectObj.name}
+                           onChange={(event) => {
+                               name = event.target.value
+                           }}
+                    />
+                </div>
+                <div style={{
+                    height: 40, backgroundColor: '#144AE4', borderRadius: 10,
+                    marginLeft: 20, marginRight: 20, justifyContent: 'center',
+                    userSelect: "none", cursor: 'pointer', alignItems: 'center',
+                    display: 'flex', marginBottom: 10
+                }} onClick={() => {
+                    let project = editProjectObj
+                    project.name = name
+                    firebase.updateProject(project)
+                    setShowEditProjectModal(false)
+                    window.location.reload(false);
+                }}>
+                    <p style={{margin: 0, color: 'white'}}>Сохранить</p>
+                </div>
+                <div style={{
+                    height: 40, backgroundColor: 'red', borderRadius: 10,
+                    marginLeft: 20, marginRight: 20, justifyContent: 'center',
+                    userSelect: "none", cursor: 'pointer', alignItems: 'center',
+                    display: 'flex'
+                }} onClick={() => {
+                    firebase.removeProject(editProjectUid)
+                    setShowEditProjectModal(false)
+                    window.location.reload(false);
+                }}>
+                    <p style={{margin: 0, color: 'white'}}>Удалить</p>
+                </div>
+            </div>
+        </Modal>
     }
 
     const ReportModal = () => {
@@ -379,15 +445,21 @@ export default function MainScreen() {
     }
 
     const UserItem = ({keys, user}) => {
+        let type = user.role === "СуперАдминистратор" ? 1 : user.role === "Администратор" ? 2 : 3
+        let color = type === 1 ? 'green' : type === 2 ? 'red' : 'black'
+        let margin = type === 1 ? 0 : type === 2 ? 20 : 40
         return (
-            <div className={'Row MainScreenUserItem'} key={keys}>
+            <div className={'Row MainScreenUserItem'} key={keys} style={{marginLeft: margin}}>
                 <Row>
-                    <div className={'MainScreenAvatar'}><p
-                        className={'MainScreenAvatarText'}>{user.username.slice(0, 1)}</p></div>
-                    <Column style={{justifyContent: 'center', marginLeft: 8}}>
-                        <p style={style.userItemName}>{user.firstname}</p>
-                        <p style={style.userItemEmail}>{user.mail}</p>
-                    </Column>
+                    <span style={{backgroundColor: color, width: 20, borderRadius: 10, height: 50}}/>
+                    <Row style={{alignItems: 'center'}}>
+                        <div className={'MainScreenAvatar'}><p
+                            className={'MainScreenAvatarText'}>{user.username.slice(0, 1)}</p></div>
+                        <Column style={{justifyContent: 'center', marginLeft: 8}}>
+                            <p style={style.userItemName}>{user.firstname}</p>
+                            <p style={style.userItemEmail}>{user.mail}</p>
+                        </Column>
+                    </Row>
                 </Row>
                 <Row style={{alignItems: 'center'}}>
                     <img src={require('../images/external_link.png')}
@@ -410,6 +482,7 @@ export default function MainScreen() {
         let lastname = addUserLastname
         let email = addUserEmail
         let password = addUserPassword
+        let myId = myUserData.id
 
         let AList = email.split("@")
         if (AList.length === 1) return
@@ -424,7 +497,8 @@ export default function MainScreen() {
             lastname: lastname,
             mail: email,
             role: userRole,
-            id: ''
+            id: '',
+            createrId: myId
         })
         //setUsers([...users, ])
         firebase.createUser(user, password)
@@ -500,7 +574,50 @@ export default function MainScreen() {
             setMyUserData(new User(data))
         })
         let users = await firebase.getAllUsers()
-        setUsers(users)
+        let superAdminers = []
+
+        let createdUsers = {}
+
+        for (const userIndex in users) {
+            let user = users[userIndex]
+            if (user.role === "СуперАдминистратор"){
+                superAdminers.push(user)
+            } else {
+                let createdId = user.createrId
+                if (!createdUsers.hasOwnProperty(createdId)){
+                    createdUsers[createdId] = [user]
+                } else {
+                    createdUsers[createdId].push(users[userIndex])
+                }
+            }
+
+        }
+
+        let usersSorted = []
+
+        for (const superAdminIndex in superAdminers) {
+            let superAdmin = superAdminers[superAdminIndex]
+            usersSorted.push(superAdmin)
+            if (createdUsers.hasOwnProperty(superAdmin.id)){
+                for (const userIndex in createdUsers[superAdmin.id]) {
+                    let user = createdUsers[superAdmin.id][userIndex]
+                    if (user.role === "Администратор"){
+                        if (user.id in createdUsers){
+                            for (const user1Index in createdUsers[user.id]){
+                                let user1 = createdUsers[user.id][user1Index]
+                                usersSorted.push(user1)
+                            }
+                        } else {
+                            usersSorted.push(user)
+                        }
+                    } else {
+                        usersSorted.push(user)
+                    }
+                }
+            }
+        }
+        console.log(usersSorted)
+        setUsers(usersSorted)
         firebase.getAllProjects(projects => {
             setAllProjects(projects)
         })
@@ -1069,6 +1186,18 @@ export default function MainScreen() {
                                     width: 30, height: 30, marginLeft: 12, marginTop: 5, cursor: 'pointer'
                                 }} onClick={() => OpenAndCloseAddUser()}/>
                             </Row>
+                            <Row style={{alignItems: "center", marginTop: 5}}>
+                                <span style={{width: 10, height: 10, backgroundColor: "green", borderRadius: 360}}/>
+                                <p style={{margin: 0, marginLeft: 10}}>Супер Администратор</p>
+                            </Row>
+                            <Row style={{alignItems: "center",  marginTop: 5}}>
+                                <span style={{width: 10, height: 10, backgroundColor: "red", borderRadius: 360}}/>
+                                <p style={{margin: 0, marginLeft: 10}}>Администратор</p>
+                            </Row>
+                            <Row style={{alignItems: "center", marginTop: 5}}>
+                                <span style={{width: 10, height: 10, backgroundColor: "black", borderRadius: 360}}/>
+                                <p style={{margin: 0, marginLeft: 10}}>Сотрудник</p>
+                            </Row>
                             {users.map((item, i) => <UserItem keys={i} user={item}/>)}
                         </Column>
                     }
@@ -1249,6 +1378,8 @@ export default function MainScreen() {
             <ReportModal/>
 
             <UserTasksModal/>
+
+            <EditProject/>
         </div>
     )
 }

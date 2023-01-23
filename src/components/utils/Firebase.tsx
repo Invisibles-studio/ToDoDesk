@@ -1,5 +1,5 @@
 import {createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, User, updatePassword, EmailAuthProvider, reauthenticateWithPopup} from "firebase/auth";
-import {get, getDatabase, onValue, ref, set} from "firebase/database";
+import {get, getDatabase, onValue, ref, set, remove} from "firebase/database";
 import {initializeApp} from "firebase/app";
 import {generateUniqueID} from "web-vitals/dist/modules/lib/generateUniqueID";
 // @ts-ignore
@@ -10,12 +10,13 @@ import firebase from "firebase/compat";
 
 
 const firebaseConfig = {
-    apiKey: "AIzaSyCOs-o_jKQB9nuim79YvsTUdmRUVdetzeA",
-    authDomain: "tododesk2.firebaseapp.com",
-    projectId: "tododesk2",
-    storageBucket: "tododesk2.appspot.com",
-    messagingSenderId: "1011881441412",
-    appId: "1:1011881441412:web:8c22ee110a47bef3b52ad1"
+    apiKey: "AIzaSyBgmSXmTRp20MawSUcINaNypQbteZHbIzM",
+    authDomain: "tododesk-6160f.firebaseapp.com",
+    databaseURL: "https://tododesk-6160f-default-rtdb.firebaseio.com",
+    projectId: "tododesk-6160f",
+    storageBucket: "tododesk-6160f.appspot.com",
+    messagingSenderId: "28221150821",
+    appId: "1:28221150821:web:5c3acc1cc69f8fa20f188c"
 };
 
 
@@ -447,5 +448,9 @@ export class Firebase{
                 callback([])
             }
         })
+    }
+
+    removeProject(uid: string){
+        remove(ref(database, 'projects/'+uid))
     }
 }
