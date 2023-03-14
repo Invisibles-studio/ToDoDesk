@@ -10,13 +10,13 @@ import firebase from "firebase/compat";
 
 
 const firebaseConfig = {
-    apiKey: "AIzaSyBgmSXmTRp20MawSUcINaNypQbteZHbIzM",
-    authDomain: "tododesk-6160f.firebaseapp.com",
-    databaseURL: "https://tododesk-6160f-default-rtdb.firebaseio.com",
-    projectId: "tododesk-6160f",
-    storageBucket: "tododesk-6160f.appspot.com",
-    messagingSenderId: "28221150821",
-    appId: "1:28221150821:web:5c3acc1cc69f8fa20f188c"
+    apiKey: "AIzaSyCOs-o_jKQB9nuim79YvsTUdmRUVdetzeA",
+    authDomain: "tododesk2.firebaseapp.com",
+    databaseURL: "https://tododesk2-default-rtdb.firebaseio.com",
+    projectId: "tododesk2",
+    storageBucket: "tododesk2.appspot.com",
+    messagingSenderId: "1011881441412",
+    appId: "1:1011881441412:web:8c22ee110a47bef3b52ad1"
 };
 
 

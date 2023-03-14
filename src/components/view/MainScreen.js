@@ -332,7 +332,7 @@ export default function MainScreen() {
 
     const EditProject = () => {
 
-        let name = ''
+        let name = editProjectObj === null ? '' : editProjectObj.name
 
         return <Modal
             open={showEditProjectModal}
